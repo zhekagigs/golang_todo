@@ -1,0 +1,21 @@
+mode: set
+github.com/zhekagigs/golang_todo/main.go:7.13,14.2 5 0
+github.com/zhekagigs/golang_todo/task.go:26.84,35.2 1 1
+github.com/zhekagigs/golang_todo/task.go:37.32,46.2 2 0
+github.com/zhekagigs/golang_todo/task.go:48.32,49.29 1 0
+github.com/zhekagigs/golang_todo/task.go:49.29,51.3 1 0
+github.com/zhekagigs/golang_todo/utils.go:10.41,12.2 1 1
+github.com/zhekagigs/golang_todo/utils.go:14.44,24.29 9 1
+github.com/zhekagigs/golang_todo/utils.go:24.29,28.12 4 1
+github.com/zhekagigs/golang_todo/utils.go:29.10,34.22 5 1
+github.com/zhekagigs/golang_todo/utils.go:35.10,37.25 2 1
+github.com/zhekagigs/golang_todo/utils.go:37.25,39.5 1 1
+github.com/zhekagigs/golang_todo/utils.go:40.4,43.25 4 1
+github.com/zhekagigs/golang_todo/utils.go:43.25,45.5 1 1
+github.com/zhekagigs/golang_todo/utils.go:46.4,47.22 2 1
+github.com/zhekagigs/golang_todo/utils.go:48.10,50.24 2 1
+github.com/zhekagigs/golang_todo/utils.go:51.10,53.24 2 1
+github.com/zhekagigs/golang_todo/utils.go:54.10,56.22 2 1
+github.com/zhekagigs/golang_todo/utils.go:59.3,61.21 3 1
+github.com/zhekagigs/golang_todo/utils.go:63.2,63.14 1 1
+github.com/zhekagigs/golang_todo/utils.go:66.23,81.2 2 0
