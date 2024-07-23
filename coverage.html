@@ -57,9 +57,9 @@
 				
 				<option value="file0">github.com/zhekagigs/golang_todo/main.go (0.0%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/task.go (20.0%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/task.go (60.0%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (95.1%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (87.8%)</option>
 				
 				</select>
 			</div>
@@ -80,7 +80,7 @@ import (
 )
 
 func main() <span class="cov0" title="0">{
-        printBeerAscii()
+        fmt.Println(printBeerAscii())
         fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
         fmt.Printf("List of tasks: \n\n")
         all_tasks := generateRandomTasks(10)
@@ -105,6 +105,8 @@ const (
         Quality
 )
 
+var timeNow = time.Now
+
 type Task struct {
         id        int
         task      string
@@ -120,12 +122,12 @@ func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Ta
                 task:      task,
                 category:  category,
                 done:      false,
-                createdAt: time.Now(),
+                createdAt: timeNow(),
                 plannedAt: plannedAt,
         }
 }</span>
 
-func (t *Task) String() string <span class="cov0" title="0">{
+func (t *Task) String() string <span class="cov8" title="1">{
         categoryName := [...]string{"Brewing", "Marketing", "Logistics", "Quality"}[t.category]
 
         return fmt.Sprintf("id:%d,[%s] %s, created: %s, planned: %s",
@@ -185,12 +187,12 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
-                case 2:<span class="cov8" title="1">
+                case 2:<span class="cov0" title="0">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
                         category = Marketing</span>
                 case 3:<span class="cov8" title="1">
@@ -208,7 +210,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
         <span class="cov8" title="1">return tasks</span>
 }
 
-func printBeerAscii() <span class="cov0" title="0">{
+func printBeerAscii() string<span class="cov0" title="0">{
         beerAscii := `
          .  o *   ..  . *  *
        *  * ... *   o  .
@@ -222,7 +224,7 @@ func printBeerAscii() <span class="cov0" title="0">{
           |\_|__|__|_/|
            \_________/
     `
-        fmt.Println(beerAscii)
+        return beerAscii
 }</span>
 </pre>
 		

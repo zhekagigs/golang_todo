@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var timeNow = time.Now
+
 func formatDatetime(t time.Time) string {
 	return t.Format("Monday, January 2, 2006 at 15:04")
 }
@@ -63,7 +65,7 @@ func generateRandomTasks(count int) []Task {
 	return tasks
 }
 
-func printBeerAscii() string{
+func printBeerAscii() string {
 	beerAscii := `
          .  o *   ..  . *  *
        *  * ... *   o  .

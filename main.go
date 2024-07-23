@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 func main() {
@@ -10,5 +11,5 @@ func main() {
 	fmt.Printf("List of tasks: \n\n")
 	all_tasks := generateRandomTasks(10)
 
-	PrintTasks(all_tasks...)
+	PrintTasks(os.Stdout, all_tasks...)
 }

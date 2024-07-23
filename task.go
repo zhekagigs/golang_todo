@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"time"
 )
 
@@ -13,6 +14,7 @@ const (
 	Logistics
 	Quality
 )
+
 
 type Task struct {
 	id        int
@@ -29,7 +31,7 @@ func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Ta
 		task:      task,
 		category:  category,
 		done:      false,
-		createdAt: time.Now(),
+		createdAt: timeNow(),
 		plannedAt: plannedAt,
 	}
 }
@@ -45,8 +47,8 @@ func (t *Task) String() string {
 		formatDatetime(t.plannedAt))
 }
 
-func PrintTasks(tasks ...Task) {
+func PrintTasks(out io.Writer, tasks ...Task) {
 	for _, task := range tasks {
-		fmt.Println(task.String())
+		fmt.Fprintln(out, task.String())
 	}
 }

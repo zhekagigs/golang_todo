@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-var timeExample = time.Date(2024, 7, 14, 12, 45, 00, 00, time.Local)
+var TimeExample = time.Date(2024, 7, 14, 12, 45, 00, 00, time.Local)
 
 func TestFormatDatetime(t *testing.T) {
-	got := formatDatetime(timeExample)
+	got := formatDatetime(TimeExample)
 	want := "Sunday, July 14, 2024 at 12:45"
 
 	if got != want {
