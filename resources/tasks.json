@@ -1,0 +1,82 @@
+[
+  {
+    "Id": 0,
+    "Task": "Conduct supplier quality audit",
+    "Category": 3,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033252+01:00",
+    "PlannedAt": "2024-07-28T19:11:51.033252+01:00"
+  },
+  {
+    "Id": 1,
+    "Task": "Update inventory management system",
+    "Category": 2,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033252+01:00",
+    "PlannedAt": "2024-08-05T03:11:51.033252+01:00"
+  },
+  {
+    "Id": 2,
+    "Task": "Process 224 lbs of Fruit puree",
+    "Category": 0,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033253+01:00",
+    "PlannedAt": "2024-08-17T07:11:51.033253+01:00"
+  },
+  {
+    "Id": 3,
+    "Task": "Label Tangy Stout",
+    "Category": 0,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033253+01:00",
+    "PlannedAt": "2024-07-26T10:11:51.033253+01:00"
+  },
+  {
+    "Id": 4,
+    "Task": "Bottle Barrel-aged Porter",
+    "Category": 0,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033254+01:00",
+    "PlannedAt": "2024-07-24T11:11:51.033254+01:00"
+  },
+  {
+    "Id": 5,
+    "Task": "Design new label",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033254+01:00",
+    "PlannedAt": "2024-07-28T16:11:51.033254+01:00"
+  },
+  {
+    "Id": 6,
+    "Task": "Update quality assurance documentation",
+    "Category": 3,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033254+01:00",
+    "PlannedAt": "2024-08-14T23:11:51.033254+01:00"
+  },
+  {
+    "Id": 7,
+    "Task": "Create promotional video",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033254+01:00",
+    "PlannedAt": "2024-08-10T03:11:51.033254+01:00"
+  },
+  {
+    "Id": 8,
+    "Task": "Organize tasting event",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033254+01:00",
+    "PlannedAt": "2024-08-02T10:11:51.033254+01:00"
+  },
+  {
+    "Id": 9,
+    "Task": "Order 134 kg of Yeast",
+    "Category": 0,
+    "Done": false,
+    "CreatedAt": "2024-07-23T15:11:51.033255+01:00",
+    "PlannedAt": "2024-08-09T15:11:51.033255+01:00"
+  }
+]

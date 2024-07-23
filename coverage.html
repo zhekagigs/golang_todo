@@ -57,9 +57,9 @@
 				
 				<option value="file0">github.com/zhekagigs/golang_todo/main.go (0.0%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/task.go (60.0%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/task.go (100.0%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (87.8%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (95.5%)</option>
 				
 				</select>
 			</div>
@@ -77,22 +77,31 @@
 
 import (
         "fmt"
+        "os"
 )
 
 func main() <span class="cov0" title="0">{
-        fmt.Println(printBeerAscii())
+        fmt.Println(BeerAscii())
         fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
         fmt.Printf("List of tasks: \n\n")
         all_tasks := generateRandomTasks(10)
+        fileName := "tasks.json"
+        SaveToJson(fileName, all_tasks...)
+        savedTasks := ReadFromJson(fileName)
+        fmt.Println()
+        fmt.Println()
+        PrintTasks(os.Stdout, savedTasks...)
 
-        PrintTasks(all_tasks...)
 }</span>
 </pre>
 		
 		<pre class="file" id="file1" style="display: none">package main
 
 import (
+        "encoding/json"
         "fmt"
+        "io"
+        "os"
         "time"
 )
 
@@ -105,44 +114,59 @@ const (
         Quality
 )
 
-var timeNow = time.Now
-
 type Task struct {
-        id        int
-        task      string
-        category  TaskCategory
-        done      bool
-        createdAt time.Time
-        plannedAt time.Time
+        Id        int
+        Task      string
+        Category  TaskCategory
+        Done      bool
+        CreatedAt time.Time
+        PlannedAt time.Time
 }
 
 func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Task <span class="cov8" title="1">{
         return Task{
-                id:        id,
-                task:      task,
-                category:  category,
-                done:      false,
-                createdAt: timeNow(),
-                plannedAt: plannedAt,
+                Id:        id,
+                Task:      task,
+                Category:  category,
+                Done:      false,
+                CreatedAt: timeNow().Round(0),
+                PlannedAt: plannedAt.Round(0),
         }
 }</span>
 
 func (t *Task) String() string <span class="cov8" title="1">{
-        categoryName := [...]string{"Brewing", "Marketing", "Logistics", "Quality"}[t.category]
+        categoryName := [...]string{"Brewing", "Marketing", "Logistics", "Quality"}[t.Category]
 
         return fmt.Sprintf("id:%d,[%s] %s, created: %s, planned: %s",
-                t.id,
+                t.Id,
                 categoryName,
-                t.task,
-                formatDatetime(t.createdAt),
-                formatDatetime(t.plannedAt))
+                t.Task,
+                formatDatetime(t.CreatedAt),
+                formatDatetime(t.PlannedAt))
 }</span>
 
-func PrintTasks(tasks ...Task) <span class="cov0" title="0">{
-        for _, task := range tasks </span><span class="cov0" title="0">{
-                fmt.Println(task.String())
+func PrintTasks(out io.Writer, tasks ...Task) <span class="cov8" title="1">{
+        for _, task := range tasks </span><span class="cov8" title="1">{
+                fmt.Fprintln(out, task.String())
         }</span>
 }
+
+func SaveToJson(fileName string, tasks ...Task) <span class="cov8" title="1">{
+        data, err := json.Marshal(tasks)
+        check(err)
+
+        err = os.WriteFile(fileName, data, 0644)
+        check(err)
+}</span>
+
+func ReadFromJson(fileName string) []Task <span class="cov8" title="1">{
+        bytes, err := os.ReadFile(fileName)
+        check(err)
+        str := bytes
+        var res []Task
+        json.Unmarshal([]byte(str), &amp;res)
+        return res
+}</span>
 </pre>
 		
 		<pre class="file" id="file2" style="display: none">package main
@@ -150,9 +174,18 @@ func PrintTasks(tasks ...Task) <span class="cov0" title="0">{
 import (
         "fmt"
         "math/rand"
+        "os"
         "strings"
         "time"
 )
+
+var timeNow = time.Now
+
+func check(err error) <span class="cov8" title="1">{
+        if err != nil </span><span class="cov8" title="1">{
+                panic(err)</span>
+        }
+}
 
 func formatDatetime(t time.Time) string <span class="cov8" title="1">{
         return t.Format("Monday, January 2, 2006 at 15:04")
@@ -187,15 +220,15 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
-                case 2:<span class="cov0" title="0">
+                case 2:<span class="cov8" title="1">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
                         category = Marketing</span>
-                case 3:<span class="cov8" title="1">
+                case 3:<span class="cov0" title="0">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
                 case 4:<span class="cov8" title="1">
@@ -210,21 +243,10 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
         <span class="cov8" title="1">return tasks</span>
 }
 
-func printBeerAscii() string<span class="cov0" title="0">{
-        beerAscii := `
-         .  o *   ..  . *  *
-       *  * ... *   o  .
-           (*%o^*^%%)    _
-          |\_________/|/ _ \
-          |  |  |  |  | / | |
-          |  |  |  |  | | | |
-          |  |  |  |  | | | |
-          |  |  |  |  | \_| |
-          |  |  |  |  |\___/
-          |\_|__|__|_/|
-           \_________/
-    `
-        return beerAscii
+func BeerAscii() string <span class="cov8" title="1">{
+        data, err := os.ReadFile("resources/beer.txt")
+        check(err)
+        return string(data)
 }</span>
 </pre>
 		

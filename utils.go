@@ -3,11 +3,18 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 )
 
 var timeNow = time.Now
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 
 func formatDatetime(t time.Time) string {
 	return t.Format("Monday, January 2, 2006 at 15:04")
@@ -65,19 +72,8 @@ func generateRandomTasks(count int) []Task {
 	return tasks
 }
 
-func printBeerAscii() string {
-	beerAscii := `
-         .  o *   ..  . *  *
-       *  * ... *   o  .
-           (*%o^*^%%)    _
-          |\_________/|/ _ \
-          |  |  |  |  | / | |
-          |  |  |  |  | | | |
-          |  |  |  |  | | | |
-          |  |  |  |  | \_| |
-          |  |  |  |  |\___/
-          |\_|__|__|_/|
-           \_________/
-    `
-	return beerAscii
+func BeerAscii() string {
+	data, err := os.ReadFile("resources/beer.txt")
+	check(err)
+	return string(data)
 }

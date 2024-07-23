@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"os"
 	"testing"
 	"time"
 )
@@ -24,4 +26,34 @@ func TestGenerateRandomTasks(t *testing.T) {
 		t.Errorf("got %v want %v", got, want)
 	}
 
+}
+
+func TestBeerAscii(t *testing.T) {
+	got := BeerAscii()
+	want, err := os.ReadFile("resources/beer.txt")
+	check(err)
+	if string(want) != got {
+		t.Errorf("got %v want %v", got, want)
+	}
+}
+
+func TestCheck(t *testing.T) {
+	t.Run("No Panic", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			if r != nil {
+				t.Errorf("Code panicked unexpectedly")
+			}
+		}()
+		check(nil)
+	})
+	t.Run("Panic", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Errorf("Code didn't panicked as it should")
+			}
+		}()
+		check(errors.New("can't work with 42"))
+	})
 }
