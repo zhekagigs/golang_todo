@@ -55,11 +55,11 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/main.go (0.0%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/main.go (81.8%)</option>
 				
 				<option value="file1">github.com/zhekagigs/golang_todo/task.go (100.0%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (95.5%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (90.9%)</option>
 				
 				</select>
 			</div>
@@ -76,22 +76,44 @@
 		<pre class="file" id="file0" style="display: none">package main
 
 import (
+        "flag"
         "fmt"
         "os"
 )
 
-func main() <span class="cov0" title="0">{
+func main() <span class="cov8" title="1">{
+        helpFlag := flag.Bool("h", false, "Display help information")
+
+        flag.Parse()
+
+        if *helpFlag </span><span class="cov8" title="1">{
+                printHelp()
+                return
+        }</span>
+
+        <span class="cov8" title="1">if flag.NArg() &lt; 1 </span><span class="cov0" title="0">{
+                fmt.Println("Error: JSON file path is required")
+                printHelp()
+                os.Exit(1)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fileName := flag.Arg(0)
         fmt.Println(BeerAscii())
         fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
-        fmt.Printf("List of tasks: \n\n")
-        all_tasks := generateRandomTasks(10)
-        fileName := "tasks.json"
-        SaveToJson(fileName, all_tasks...)
-        savedTasks := ReadFromJson(fileName)
-        fmt.Println()
-        fmt.Println()
-        PrintTasks(os.Stdout, savedTasks...)
+        fmt.Printf("List of tasks:\n\n")
 
+        savedTasks := ReadFromJson(fileName)
+        PrintTasks(os.Stdout, savedTasks...)</span>
+}
+
+func printHelp() <span class="cov8" title="1">{
+        fmt.Println("Usage: microbrewery-tasks [options] &lt;json-file-path&gt;")
+        fmt.Println("\nOptions:")
+        flag.PrintDefaults()
+        fmt.Println("\nDescription:")
+        fmt.Println("  This CLI application reads a JSON file containing microbrewery tasks and displays them.")
+        fmt.Println("  Provide the path to the JSON file as an argument.")
 }</span>
 </pre>
 		
@@ -214,21 +236,21 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         category = Brewing</span>
                 case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 verb = "Order"
                         }</span>
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
-                case 2:<span class="cov8" title="1">
+                case 2:<span class="cov0" title="0">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
                         category = Marketing</span>
-                case 3:<span class="cov0" title="0">
+                case 3:<span class="cov8" title="1">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
                 case 4:<span class="cov8" title="1">
