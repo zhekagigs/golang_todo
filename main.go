@@ -7,20 +7,25 @@ import (
 )
 
 func main() {
-	helpFlag := flag.Bool("h", false, "Only flag there is and its help")
+	os.Exit(RealMain())
+}
+
+func RealMain() int {
+	helpFlag := flag.Bool("h", false, "Display help information")
+
+	flag.Usage = printHelp
 
 	flag.Parse()
 
 	if *helpFlag {
-		printHelp()
-		return
+		flag.Usage()
+		return 0
 	}
 
 	if flag.NArg() < 1 {
 		fmt.Println("Error: JSON file path is required")
-		printHelp()
-		os.Exit(1)
-		return
+		flag.Usage()
+		return 1
 	}
 
 	fileName := flag.Arg(0)
@@ -30,6 +35,7 @@ func main() {
 
 	savedTasks := ReadFromJson(fileName)
 	PrintTasks(os.Stdout, savedTasks...)
+	return 0
 }
 
 func printHelp() {
