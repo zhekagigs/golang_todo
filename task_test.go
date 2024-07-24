@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -108,18 +111,64 @@ func TestPrintTasks(t *testing.T) {
 }
 
 func TestReadAndWriteJson(t *testing.T) {
-	taskA := NewTask(1, "Brew", 0, TimeExample)
-	taskB := NewTask(2, "Advertise", 1, TimeExample)
+	t.Run("Happy Path", func(t *testing.T) {
+		taskA := NewTask(1, "Brew", 0, TimeExample)
+		taskB := NewTask(2, "Advertise", 1, TimeExample)
 
-	SaveToJson("resources/test_tasks.json", taskA, taskB)
+		SaveToJson("resources/test_tasks.json", taskA, taskB)
 
-	got := ReadFromJson("resources/test_tasks.json")
-	want := []Task{taskA, taskB}
+		got, err := ReadFromJson("resources/test_tasks.json")
+		if err != nil {
+			t.Errorf("ReadFromJson failed!")
+		}
+		want := []Task{taskA, taskB}
 
-	if got[0] != want[0] {
-		t.Errorf("got \n%v\n want \n%v\n", got[0], want[0])
-	}
-	if got[1] != want[1] {
-		t.Errorf("got \n%v\n want \n%v\n", got[1], want[1])
-	}
+		if got[0] != want[0] {
+			t.Errorf("got \n%v\n want \n%v\n", got[0], want[0])
+		}
+		if got[1] != want[1] {
+			t.Errorf("got \n%v\n want \n%v\n", got[1], want[1])
+		}
+	})
+
+	t.Run("Wrong file name read with correct suffix", func(t *testing.T) {
+		_, err := ReadFromJson("wrongFileName.json")
+		if err == nil {
+			t.Errorf("There must be an error")
+			return
+		}
+
+		// Check if the error is a *fs.PathError
+		var pathError *os.PathError
+		if !errors.As(err, &pathError) {
+			t.Errorf("Expected *fs.PathError, got %T", err)
+			return
+		}
+
+		// Check if the underlying error is os.ErrNotExist
+		if !errors.Is(pathError, os.ErrNotExist) {
+			t.Errorf("Expected underlying error to be os.ErrNotExist, got %v", pathError.Err)
+		}
+	})
+
+
+	t.Run("Wrong file name with incorrect suffix", func(t *testing.T) {
+		_, err := ReadFromJson("wrongFileName.garbage")
+		if err == nil {
+			t.Errorf("There must be an error")
+			return
+		}
+
+		// Check if the error is a *fs.PathError
+		var pathError *os.PathError
+		if !errors.As(err, &pathError) {
+			t.Errorf("Expected *fs.PathError, got %T", err)
+			return
+		}
+
+		// Check if the underlying error is os.ErrNotExist
+		if !errors.Is(pathError, os.ErrNotExist) {
+			t.Errorf("Expected underlying error to be os.ErrNotExist, got %v", pathError.Err)
+		}
+	})
 }

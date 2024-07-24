@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -54,19 +55,37 @@ func PrintTasks(out io.Writer, tasks ...Task) {
 	}
 }
 
-func SaveToJson(fileName string, tasks ...Task) {
-	data, err := json.Marshal(tasks)
-	check(err)
+func SaveToJson(filePath string, tasks ...Task) error {
+	if !strings.HasSuffix(filePath, ".json") {
+		return fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+	}
 
-	err = os.WriteFile(fileName, data, 0644)
-	check(err)
+	data, err := json.MarshalIndent(tasks, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal tasks: %w", err)
+	}
+
+	err = os.WriteFile(filePath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write to a file '%s': %w", filePath, err)
+	}
+	return nil
 }
 
-func ReadFromJson(fileName string) []Task {
-	bytes, err := os.ReadFile(fileName)
-	check(err)
-	str := bytes
-	var res []Task
-	json.Unmarshal([]byte(str), &res)
-	return res
+func ReadFromJson(filePath string) ([]Task, error) {
+	if !strings.HasSuffix(filePath, ".json") {
+		return nil, fmt.Errorf("invalid file extension: %s. Expected a .json file ", filePath)
+	}
+
+	bytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read a file '%s': %w", filePath, err)
+	}
+
+	var tasks []Task
+	if err := json.Unmarshal(bytes, &tasks); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON from file '%s': %w", filePath, err)
+	}
+
+	return tasks, nil
 }

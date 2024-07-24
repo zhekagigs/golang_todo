@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -33,7 +34,17 @@ func RealMain() int {
 	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
 	fmt.Printf("List of tasks:\n\n")
 
-	savedTasks := ReadFromJson(fileName)
+	savedTasks, err := ReadFromJson(fileName)
+	if err != nil {
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			fmt.Println("Error: Wrong file path")
+		default:
+			fmt.Println("Error reading json file &v", err)
+		}
+		flag.Usage()
+		return 1
+	}
 	PrintTasks(os.Stdout, savedTasks...)
 	return 0
 }

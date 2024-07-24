@@ -35,6 +35,12 @@ func TestMainAndPrintHelp(t *testing.T) {
 			expectExit:     1,
 		},
 		{
+			name:           "Wrong file name",
+			args:           []string{"cmd wrong_file.garbage"},
+			expectedOutput: []string{"Error: Wrong file path", "Usage: microbrewery-tasks"},
+			expectExit:     1,
+		},
+		{
 			name:           "Help flag",
 			args:           []string{"cmd", "-h"},
 			expectedOutput: []string{"Usage: microbrewery-tasks", "Options:", "Description:"},
@@ -87,5 +93,3 @@ func TestMainAndPrintHelp(t *testing.T) {
 		})
 	}
 }
-
-// Mock os.Exit
