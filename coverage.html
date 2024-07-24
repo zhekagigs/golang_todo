@@ -55,11 +55,11 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/main.go (95.8%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/main.go (81.6%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/task.go (100.0%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/task.go (15.5%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (100.0%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/utils.go (97.7%)</option>
 				
 				</select>
 			</div>
@@ -76,6 +76,7 @@
 		<pre class="file" id="file0" style="display: none">package main
 
 import (
+        "errors"
         "flag"
         "fmt"
         "os"
@@ -85,8 +86,32 @@ func main() <span class="cov0" title="0">{
         os.Exit(RealMain())
 }</span>
 
-func RealMain() int <span class="cov8" title="1">{
-        helpFlag := flag.Bool("h", false, "Display help information")
+type commands string
+
+const (
+        READ   commands = "read"
+        CREATE commands = "create"
+        UPDATE commands = "update"
+        DELETE commands = "delete"
+        EXIT   commands = "exit"
+)
+
+func RealMain() int <span class="cov0" title="0">{
+        // readCmnd := flag.NewFlagSet(string(READ), flag.ExitOnError)
+        // createCmnd := flag.NewFlagSet(string(CREATE), flag.ExitOnError)
+        // updateCmnd := flag.NewFlagSet(string(UPDATE), flag.ExitOnError)
+        // deleteCmnd := flag.NewFlagSet(string(DELETE), flag.ExitOnError)
+        taskHolder, checkExit, exitCode := ConfigureMain()
+        if checkExit </span><span class="cov0" title="0">{
+                return exitCode
+        }</span>
+        <span class="cov0" title="0">RunTaskManagmentCLI(taskHolder)
+
+        return 0</span>
+}
+
+func ConfigureMain() (*TaskHolder, bool, int) <span class="cov8" title="1">{
+        helpFlag := flag.Bool("h", false, "Help is here")
 
         flag.Usage = printHelp
 
@@ -94,23 +119,37 @@ func RealMain() int <span class="cov8" title="1">{
 
         if *helpFlag </span><span class="cov8" title="1">{
                 flag.Usage()
-                return 0
+                return nil, true, 0
         }</span>
 
         <span class="cov8" title="1">if flag.NArg() &lt; 1 </span><span class="cov8" title="1">{
                 fmt.Println("Error: JSON file path is required")
                 flag.Usage()
-                return 1
+                return nil, true, 1
         }</span>
 
         <span class="cov8" title="1">fileName := flag.Arg(0)
-        fmt.Println(BeerAscii())
-        fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
-        fmt.Printf("List of tasks:\n\n")
 
-        savedTasks := ReadFromJson(fileName)
+        savedTasks, err := ReadFromJson(fileName)
+        if err != nil </span><span class="cov8" title="1">{
+                switch </span>{
+                case errors.Is(err, os.ErrNotExist):<span class="cov0" title="0">
+                        fmt.Println("Error: Wrong file path")</span>
+                default:<span class="cov8" title="1">
+                        fmt.Printf("Error while reading json file: %v\n", err)</span>
+                }
+                <span class="cov8" title="1">flag.Usage()
+                return nil, true, 1</span>
+        }
+        <span class="cov8" title="1">fmt.Println(BeerAscii())
+        fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
+        fmt.Println(savedTasks)
         PrintTasks(os.Stdout, savedTasks...)
-        return 0</span>
+        taskHolder := NewTaskHolder()
+        for _, task := range savedTasks </span><span class="cov8" title="1">{
+                taskHolder.Add(task)
+        }</span>
+        <span class="cov8" title="1">return taskHolder, false, 0</span>
 }
 
 func printHelp() <span class="cov8" title="1">{
@@ -126,12 +165,45 @@ func printHelp() <span class="cov8" title="1">{
 		<pre class="file" id="file1" style="display: none">package main
 
 import (
+        "bufio"
         "encoding/json"
+        "errors"
         "fmt"
         "io"
         "os"
+        "strconv"
+        "strings"
         "time"
 )
+
+var jsonMarshal = json.MarshalIndent //for monkey patching mock
+
+// error definitions
+var (
+        ErrNotFound = errors.New("not found")
+)
+
+type InvalidCategoryError struct {
+        Category TaskCategory
+}
+
+func (e *InvalidCategoryError) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("invalid task category: %v", e.Category)
+}</span>
+
+type EmptyTaskValueError struct{}
+
+func (e *EmptyTaskValueError) Error() string <span class="cov0" title="0">{
+        return "task value cannot be empty"
+}</span>
+
+type PastPlannedTimeError struct {
+        PlannedTime time.Time
+}
+
+func (e *PastPlannedTimeError) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("planned time %v is in the past", e.PlannedTime)
+}</span>
 
 type TaskCategory int
 
@@ -142,9 +214,105 @@ const (
         Quality
 )
 
+type TaskUpdate struct {
+        Done      *bool
+        Msg       *string
+        Category  *TaskCategory
+        PlannedAt *time.Time
+}
+
+type TaskHolder struct {
+        latestId int
+        tasks    []Task
+}
+
+func NewTaskHolder() *TaskHolder <span class="cov8" title="1">{
+        return &amp;TaskHolder{}
+}</span>
+
+func (t *TaskHolder) Read() []Task <span class="cov0" title="0">{
+        return t.tasks
+}</span>
+
+func (t *TaskHolder) Add(task Task) <span class="cov8" title="1">{
+        t.tasks = append(t.tasks, task)
+}</span>
+
+func (t *TaskHolder) CreateTask(taskValue string, category TaskCategory, plannedAt time.Time) Task <span class="cov0" title="0">{
+        t.latestId++
+        task := NewTask(t.latestId, taskValue, category, plannedAt)
+        t.tasks = append(t.tasks, task)
+        return task
+}</span>
+
+func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) <span class="cov0" title="0">{
+        for _, v := range t.tasks </span><span class="cov0" title="0">{
+                if v.Id == taskId </span><span class="cov0" title="0">{
+                        return &amp;v, nil
+                }</span>
+        }
+        <span class="cov0" title="0">return nil, ErrNotFound</span>
+}
+
+func (t *TaskHolder) PartialUpdateTask(taskId int, update TaskUpdate) error <span class="cov0" title="0">{
+        task, err := t.FindTaskById(taskId)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if update.Done != nil </span><span class="cov0" title="0">{
+                task.Done = *update.Done
+        }</span>
+
+        <span class="cov0" title="0">if update.Msg != nil </span><span class="cov0" title="0">{
+                if len(*update.Msg) == 0 </span><span class="cov0" title="0">{
+                        return &amp;EmptyTaskValueError{}
+                }</span>
+                <span class="cov0" title="0">task.Msg = *update.Msg</span>
+        }
+
+        <span class="cov0" title="0">if update.Category != nil </span><span class="cov0" title="0">{
+                if !isValidTaskCategory(*update.Category) </span><span class="cov0" title="0">{
+                        return &amp;InvalidCategoryError{Category: *update.Category}
+                }</span>
+                <span class="cov0" title="0">task.Category = *update.Category</span>
+        }
+
+        <span class="cov0" title="0">if update.PlannedAt != nil </span><span class="cov0" title="0">{
+                if update.PlannedAt.Before(time.Now()) </span><span class="cov0" title="0">{
+                        return &amp;PastPlannedTimeError{PlannedTime: *update.PlannedAt}
+                }</span>
+                <span class="cov0" title="0">task.PlannedAt = *update.PlannedAt</span>
+        }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (t *TaskHolder) DeleteTask(taskId int) error <span class="cov0" title="0">{
+        index := -1
+        for i, task := range t.tasks </span><span class="cov0" title="0">{
+                if task.Id == taskId </span><span class="cov0" title="0">{
+                        index = i
+                        break</span>
+                }
+        }
+
+        <span class="cov0" title="0">if index == -1 </span><span class="cov0" title="0">{
+                return fmt.Errorf("task with ID %d not found", taskId)
+        }</span>
+
+        <span class="cov0" title="0">t.tasks = append(t.tasks[:index], t.tasks[index+1:]...)
+
+        return nil</span>
+}
+
+func isValidTaskCategory(category TaskCategory) bool <span class="cov0" title="0">{
+        return Brewing &lt;= category &amp;&amp; category &lt;= Quality
+}</span>
+
 type Task struct {
         Id        int
-        Task      string
+        Msg       string
         Category  TaskCategory
         Done      bool
         CreatedAt time.Time
@@ -154,7 +322,7 @@ type Task struct {
 func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Task <span class="cov8" title="1">{
         return Task{
                 Id:        id,
-                Task:      task,
+                Msg:       task,
                 Category:  category,
                 Done:      false,
                 CreatedAt: timeNow().Round(0),
@@ -168,7 +336,7 @@ func (t *Task) String() string <span class="cov8" title="1">{
         return fmt.Sprintf("id:%d,[%s] %s, created: %s, planned: %s",
                 t.Id,
                 categoryName,
-                t.Task,
+                t.Msg,
                 formatDatetime(t.CreatedAt),
                 formatDatetime(t.PlannedAt))
 }</span>
@@ -179,22 +347,187 @@ func PrintTasks(out io.Writer, tasks ...Task) <span class="cov8" title="1">{
         }</span>
 }
 
-func SaveToJson(fileName string, tasks ...Task) <span class="cov8" title="1">{
-        data, err := json.Marshal(tasks)
-        check(err)
+func WriteToJson(filePath string, tasks ...Task) error <span class="cov8" title="1">{
+        if !strings.HasSuffix(filePath, ".json") </span><span class="cov8" title="1">{
+                return fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+        }</span>
 
-        err = os.WriteFile(fileName, data, 0644)
-        check(err)
-}</span>
+        <span class="cov8" title="1">data, err := jsonMarshal(tasks, "", "  ")
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to marshal tasks: %w", err)
+        }</span>
 
-func ReadFromJson(fileName string) []Task <span class="cov8" title="1">{
-        bytes, err := os.ReadFile(fileName)
-        check(err)
-        str := bytes
-        var res []Task
-        json.Unmarshal([]byte(str), &amp;res)
-        return res
-}</span>
+        <span class="cov8" title="1">err = os.WriteFile(filePath, data, 0644)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to write to a file '%s': %w", filePath, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func ReadFromJson(filePath string) ([]Task, error) <span class="cov8" title="1">{
+        if !strings.HasSuffix(filePath, ".json") </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+        }</span>
+
+        <span class="cov8" title="1">bytes, err := os.ReadFile(filePath)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to read a file '%s': %w", filePath, err)
+        }</span>
+
+        <span class="cov8" title="1">var tasks []Task
+        if err := json.Unmarshal(bytes, &amp;tasks); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal JSON from file '%s': %w", filePath, err)
+        }</span>
+
+        <span class="cov8" title="1">return tasks, nil</span>
+}
+
+func RunTaskManagmentCLI(taskHolder *TaskHolder) <span class="cov0" title="0">{
+        reader := bufio.NewReader(os.Stdin)
+
+        for </span><span class="cov0" title="0">{
+                fmt.Println("\nAvailable Commands: read, create, update, delete")
+                fmt.Print("Enter Command: ")
+                cmdString, _ := reader.ReadString('\n')
+                parts := strings.Fields(cmdString)
+                cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+
+                if len(parts) == 0 </span><span class="cov0" title="0">{
+                        fmt.Println("Please enter a command.")
+                        continue</span>
+                }
+                <span class="cov0" title="0">var taskId int
+                var err error
+
+                if len(parts) &gt; 1 &amp;&amp; (cmd == UPDATE || cmd == DELETE) </span><span class="cov0" title="0">{
+                        taskId, err = strconv.Atoi(parts[1])
+                        if err != nil </span><span class="cov0" title="0">{
+                                fmt.Println("Invalid task ID. Please enter a number.")
+                                continue</span>
+                        }
+                }
+
+                <span class="cov0" title="0">switch cmd </span>{
+                case READ:<span class="cov0" title="0">
+                        readTasks(taskHolder)</span>
+                case CREATE:<span class="cov0" title="0">
+                        createTask(taskHolder, reader)</span>
+                case UPDATE:<span class="cov0" title="0">
+                        updateTask(taskHolder, taskId, reader)</span>
+                case DELETE:<span class="cov0" title="0">
+                        deleteTask(taskHolder, taskId)</span>
+                case EXIT:<span class="cov0" title="0">
+                        exitApp()</span>
+                default:<span class="cov0" title="0">
+                        fmt.Println("Invalid command. Please try again.")</span>
+                }
+
+        }
+}
+
+func exitApp() <span class="cov0" title="0">{
+        panic("unimplemented")</span>
+}
+
+func deleteTask(taskHolder *TaskHolder, taskId int) <span class="cov0" title="0">{
+        err := taskHolder.DeleteTask(taskId)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+}
+
+func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) <span class="cov0" title="0">{
+        fmt.Println("Updating task. Press Enter to skip a field if you don't want to update it.")
+
+        // Update task message
+        fmt.Print("Enter new task description (or press Enter to skip): ")
+        msg, _ := reader.ReadString('\n')
+        msg = strings.TrimSpace(msg)
+
+        // Update task status
+        var done bool
+        var donePtr *bool
+        fmt.Print("Update task status? (y/n): ")
+        updateStatus, _ := reader.ReadString('\n')
+        if strings.ToLower(strings.TrimSpace(updateStatus)) == "y" </span><span class="cov0" title="0">{
+                fmt.Print("Is the task done? (true/false): ")
+                doneStr, _ := reader.ReadString('\n')
+                doneStr = strings.TrimSpace(doneStr)
+                if parsedDone, err := strconv.ParseBool(doneStr); err == nil </span><span class="cov0" title="0">{
+                        done = parsedDone
+                        donePtr = &amp;done
+                }</span>
+        }
+
+        // Update task category
+        <span class="cov0" title="0">var category TaskCategory
+        var categoryPtr *TaskCategory
+        fmt.Print("Update task category? (y/n): ")
+        updateCategory, _ := reader.ReadString('\n')
+        if strings.ToLower(strings.TrimSpace(updateCategory)) == "y" </span><span class="cov0" title="0">{
+                fmt.Println("Available categories:")
+                fmt.Println("0: Brewing")
+                fmt.Println("1: Marketing")
+                fmt.Println("2: Logistics")
+                fmt.Println("3: Quality")
+                fmt.Print("Enter new category (0-3): ")
+                categoryStr, _ := reader.ReadString('\n')
+                if parsedCategory, err := strconv.Atoi(strings.TrimSpace(categoryStr)); err == nil &amp;&amp; parsedCategory &gt;= 0 &amp;&amp; parsedCategory &lt;= 3 </span><span class="cov0" title="0">{
+                        category = TaskCategory(parsedCategory)
+                        categoryPtr = &amp;category
+                }</span>
+        }
+
+        // Update planned time
+        <span class="cov0" title="0">var plannedAt time.Time
+        var plannedAtPtr *time.Time
+        fmt.Print("Update planned time? (y/n): ")
+        updatePlannedTime, _ := reader.ReadString('\n')
+        if strings.ToLower(strings.TrimSpace(updatePlannedTime)) == "y" </span><span class="cov0" title="0">{
+                fmt.Print("Enter new planned time (YYYY-MM-DD HH:MM): ")
+                timeStr, _ := reader.ReadString('\n')
+                if parsedTime, err := time.Parse("2006-01-02 15:04", strings.TrimSpace(timeStr)); err == nil </span><span class="cov0" title="0">{
+                        plannedAt = parsedTime
+                        plannedAtPtr = &amp;plannedAt
+                }</span>
+        }
+
+        <span class="cov0" title="0">update := TaskUpdate{
+                Done:      donePtr,
+                Msg:       stringPtr(msg),
+                Category:  categoryPtr,
+                PlannedAt: plannedAtPtr,
+        }
+
+        err := taskHolder.PartialUpdateTask(taskId, update)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error updating task: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Println("Task updated successfully.")
+        }</span>
+}
+
+func stringPtr(s string) *string <span class="cov0" title="0">{
+        if s == "" </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov0" title="0">return &amp;s</span>
+}
+
+func createTask(taskHolder *TaskHolder, reader *bufio.Reader) <span class="cov0" title="0">{
+        panic("unimplemented")</span>
+}
+
+func readTasks(taskHolder *TaskHolder) <span class="cov0" title="0">{
+        all_tasks := taskHolder.Read()
+        if len(all_tasks) == 0 </span><span class="cov0" title="0">{
+                fmt.Println("No tasks found.")
+                return
+        }</span>
+
+        <span class="cov0" title="0">fmt.Printf("\nList of tasks:\n\n")
+        PrintTasks(os.Stdout, all_tasks...)</span>
+}
 </pre>
 		
 		<pre class="file" id="file2" style="display: none">package main
@@ -248,7 +581,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)

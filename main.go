@@ -11,8 +11,32 @@ func main() {
 	os.Exit(RealMain())
 }
 
+type commands string
+
+const (
+	READ   commands = "read"
+	CREATE commands = "create"
+	UPDATE commands = "update"
+	DELETE commands = "delete"
+	EXIT   commands = "exit"
+)
+
 func RealMain() int {
-	helpFlag := flag.Bool("h", false, "Display help information")
+	// readCmnd := flag.NewFlagSet(string(READ), flag.ExitOnError)
+	// createCmnd := flag.NewFlagSet(string(CREATE), flag.ExitOnError)
+	// updateCmnd := flag.NewFlagSet(string(UPDATE), flag.ExitOnError)
+	// deleteCmnd := flag.NewFlagSet(string(DELETE), flag.ExitOnError)
+	taskHolder, checkExit, exitCode := ConfigureMain()
+	if checkExit {
+		return exitCode
+	}
+	RunTaskManagmentCLI(taskHolder)
+
+	return 0
+}
+
+func ConfigureMain() (*TaskHolder, bool, int) {
+	helpFlag := flag.Bool("h", false, "Help is here")
 
 	flag.Usage = printHelp
 
@@ -20,19 +44,16 @@ func RealMain() int {
 
 	if *helpFlag {
 		flag.Usage()
-		return 0
+		return nil, true, 0
 	}
 
 	if flag.NArg() < 1 {
 		fmt.Println("Error: JSON file path is required")
 		flag.Usage()
-		return 1
+		return nil, true, 1
 	}
 
 	fileName := flag.Arg(0)
-	fmt.Println(BeerAscii())
-	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
-	fmt.Printf("List of tasks:\n\n")
 
 	savedTasks, err := ReadFromJson(fileName)
 	if err != nil {
@@ -40,13 +61,20 @@ func RealMain() int {
 		case errors.Is(err, os.ErrNotExist):
 			fmt.Println("Error: Wrong file path")
 		default:
-			fmt.Println("Error reading json file &v", err)
+			fmt.Printf("Error while reading json file: %v\n", err)
 		}
 		flag.Usage()
-		return 1
+		return nil, true, 1
 	}
+	fmt.Println(BeerAscii())
+	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
+	fmt.Println(savedTasks)
 	PrintTasks(os.Stdout, savedTasks...)
-	return 0
+	taskHolder := NewTaskHolder()
+	for _, task := range savedTasks {
+		taskHolder.Add(task)
+	}
+	return taskHolder, false, 0
 }
 
 func printHelp() {

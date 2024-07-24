@@ -36,8 +36,8 @@ func TestMainAndPrintHelp(t *testing.T) {
 		},
 		{
 			name:           "Wrong file name",
-			args:           []string{"cmd wrong_file.garbage"},
-			expectedOutput: []string{"Error: Wrong file path", "Usage: microbrewery-tasks"},
+			args:           []string{"cmd", "wrong_file.garbage"},
+			expectedOutput: []string{"Error while reading json file: invalid file extension: wrong_file.garbage. Expected a .json file", "Usage: microbrewery-tasks"},
 			expectExit:     1,
 		},
 		{
@@ -49,7 +49,7 @@ func TestMainAndPrintHelp(t *testing.T) {
 		{
 			name:           "Valid file argument",
 			args:           []string{"cmd", "resources/tasks.json"},
-			expectedOutput: []string{"Microbrewery Tasks Application", "List of tasks:"},
+			expectedOutput: []string{"Microbrewery Tasks Application"},
 			expectExit:     0,
 		},
 	}
@@ -64,12 +64,11 @@ func TestMainAndPrintHelp(t *testing.T) {
 				panic(err)
 			}
 			os.Stdout = write
-
 			// Set up a new flag set for each test
 			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ContinueOnError)
 			os.Args = tt.args
 
-			actualExit := RealMain()
+			_, _, actualExit := ConfigureMain()
 
 			// Close the write end of the pipe
 			write.Close()

@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -32,8 +32,8 @@ func TestNewTaskMock(t *testing.T) {
 	if task.Id != id {
 		t.Errorf("Expected id %d, got %d", id, task.Id)
 	}
-	if task.Task != taskDescription {
-		t.Errorf("Expected task %s, got %s", taskDescription, task.Task)
+	if task.Msg != taskDescription {
+		t.Errorf("Expected task %s, got %s", taskDescription, task.Msg)
 	}
 	if task.Category != category {
 		t.Errorf("Expected category %d, got %d", category, task.Category)
@@ -61,8 +61,8 @@ func TestNewTaskReal(t *testing.T) {
 	if task.Id != id {
 		t.Errorf("Expected id %d, got %d", id, task.Id)
 	}
-	if task.Task != taskDescription {
-		t.Errorf("Expected task %s, got %s", taskDescription, task.Task)
+	if task.Msg != taskDescription {
+		t.Errorf("Expected task %s, got %s", taskDescription, task.Msg)
 	}
 	if task.Category != category {
 		t.Errorf("Expected category %d, got %d", category, task.Category)
@@ -111,11 +111,15 @@ func TestPrintTasks(t *testing.T) {
 }
 
 func TestReadAndWriteJson(t *testing.T) {
-	t.Run("Happy Path", func(t *testing.T) {
+	t.Run("Happy Path read and write", func(t *testing.T) {
 		taskA := NewTask(1, "Brew", 0, TimeExample)
 		taskB := NewTask(2, "Advertise", 1, TimeExample)
 
-		SaveToJson("resources/test_tasks.json", taskA, taskB)
+		err := WriteToJson("resources/test_tasks.json", taskA, taskB)
+
+		if err != nil {
+			t.Errorf("Unexpected err %v", err)
+		}
 
 		got, err := ReadFromJson("resources/test_tasks.json")
 		if err != nil {
@@ -131,7 +135,45 @@ func TestReadAndWriteJson(t *testing.T) {
 		}
 	})
 
-	t.Run("Wrong file name read with correct suffix", func(t *testing.T) {
+	t.Run("Wrong file extension to write", func(t *testing.T) {
+		taskA := NewTask(1, "Brew", 0, TimeExample)
+		taskB := NewTask(2, "Advertise", 1, TimeExample)
+
+		err := WriteToJson("resources/test_tasks.txt", taskA, taskB)
+
+		if err == nil {
+			t.Errorf("ReadFromJson didn't fail as expected with given wrong file extension!")
+		}
+
+		want := "invalid file extension: resources/test_tasks.txt. Expected a .json file"
+
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("got %v want %v", err.Error(), want)
+		}
+	})
+
+	t.Run("Error - Marshal failure to write", func(t *testing.T) {
+		taskA := NewTask(1, "Brew", 0, TimeExample)
+		oldMarshal := jsonMarshal
+		jsonMarshal = func(v any, prefix, indent string) ([]byte, error) {
+			return nil, &json.UnsupportedTypeError{Type: nil}
+		}
+		defer func() {
+			jsonMarshal = oldMarshal
+		}()
+
+		err := WriteToJson("test.json", taskA)
+		if err == nil {
+			t.Error("Expected an error for marshal failure, got nil")
+		}
+
+		var unsupportedTypeError *json.UnsupportedTypeError
+		if !errors.As(err, &unsupportedTypeError) {
+			t.Errorf("Expected error chain to contain json.UnsupportedTypeError, got %T", err)
+		}
+	})
+
+	t.Run("Wrong file path  with correct suffix to read", func(t *testing.T) {
 		_, err := ReadFromJson("wrongFileName.json")
 		if err == nil {
 			t.Errorf("There must be an error")
@@ -151,24 +193,16 @@ func TestReadAndWriteJson(t *testing.T) {
 		}
 	})
 
-
-	t.Run("Wrong file name with incorrect suffix", func(t *testing.T) {
-		_, err := ReadFromJson("wrongFileName.garbage")
+	t.Run("Wrong file extension to read", func(t *testing.T) {
+		_, err := ReadFromJson("wrongFileName.txt")
 		if err == nil {
-			t.Errorf("There must be an error")
+			t.Errorf("Expected an error, but got nil")
 			return
 		}
 
-		// Check if the error is a *fs.PathError
-		var pathError *os.PathError
-		if !errors.As(err, &pathError) {
-			t.Errorf("Expected *fs.PathError, got %T", err)
-			return
-		}
-
-		// Check if the underlying error is os.ErrNotExist
-		if !errors.Is(pathError, os.ErrNotExist) {
-			t.Errorf("Expected underlying error to be os.ErrNotExist, got %v", pathError.Err)
+		expectedErrMsg := "invalid file extension: wrongFileName.txt. Expected a .json file"
+		if err.Error() != expectedErrMsg {
+			t.Errorf("Expected error message '%s', got '%s'", expectedErrMsg, err.Error())
 		}
 	})
 }
