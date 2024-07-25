@@ -19,9 +19,8 @@ const (
 	EXIT   commands = "exit"
 )
 
-func RunTaskManagmentCLI(taskHolder *TaskHolder) {
+func RunTaskManagmentCLI(taskHolder *TaskHolder) int {
 	reader := bufio.NewReader(os.Stdin)
-
 	for {
 		fmt.Println("\nAvailable Commands: read, create, update, delete")
 		fmt.Print("Enter Command: ")
@@ -54,7 +53,7 @@ func RunTaskManagmentCLI(taskHolder *TaskHolder) {
 		case DELETE:
 			err = deleteTask(taskHolder, taskId)
 		case EXIT:
-			exitApp()
+			return exitApp(taskHolder)
 		default:
 			fmt.Println("Invalid command. Please try again.")
 		}
@@ -62,12 +61,16 @@ func RunTaskManagmentCLI(taskHolder *TaskHolder) {
 			fmt.Println("failed operation with error: ", err)
 			continue
 		}
-
 	}
 }
 
-func exitApp() {
-	panic("unimplemented")
+func exitApp(taskHolder *TaskHolder) int {
+	fmt.Println("Thank you for using the Task Management CLI. Tasks are saved to `resources/disk.json`. Goodbye!")
+	err := WriteToJson("resources/disk.json", taskHolder.tasks...)
+	if err != nil {
+		panic(err)
+	}
+	return 0
 }
 
 func deleteTask(taskHolder *TaskHolder, taskId int) error {
@@ -176,8 +179,8 @@ func createTask(taskHolder *TaskHolder, reader *bufio.Reader) error {
 	lines := strings.Split(line, ",")
 
 	taskValue := lines[0]
-	category, err := strconv.Atoi(lines[1])
-	fmt.Println(category)
+	categoryNum, err := strconv.Atoi(strings.TrimSpace(lines[1]))
+	fmt.Println(categoryNum)
 	if err != nil {
 		return err
 	}
@@ -187,7 +190,7 @@ func createTask(taskHolder *TaskHolder, reader *bufio.Reader) error {
 	if err == nil {
 		plannedParsedAt = parsedTime
 	}
-	taskHolder.CreateTask(taskValue, Brewing, plannedParsedAt)
+	taskHolder.CreateTask(taskValue, TaskCategory(categoryNum), plannedParsedAt)
 	return nil
 }
 

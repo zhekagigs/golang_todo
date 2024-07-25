@@ -26,20 +26,25 @@ func (t *TaskHolder) Read() []Task {
 }
 
 func (t *TaskHolder) Add(task Task) {
+	t.latestId++
+	if task.Id < t.latestId {
+		task.Id = t.latestId
+	}
 	t.tasks = append(t.tasks, task)
+
 }
 
-func (t *TaskHolder) CreateTask(taskValue string, category TaskCategory, plannedAt time.Time) Task {
+func (t *TaskHolder) CreateTask(taskValue string, category TaskCategory, plannedAt time.Time) *Task {
 	t.latestId++
 	task := NewTask(t.latestId, taskValue, category, plannedAt)
 	t.tasks = append(t.tasks, task)
-	return task
+	return &task
 }
 
 func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) {
-	for _, v := range t.tasks {
-		if v.Id == taskId {
-			return &v, nil
+	for i := range t.tasks {
+		if t.tasks[i].Id == taskId {
+			return &t.tasks[i], nil
 		}
 	}
 	return nil, ErrNotFound

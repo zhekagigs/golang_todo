@@ -75,12 +75,13 @@ func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Ta
 }
 
 func (t *Task) String() string {
-	return fmt.Sprintf("id:%d,[%s] %s, created: %s, planned: %s",
+	return fmt.Sprintf("id:%d,[%s] %s, created: %s, planned: %s, finished: %v",
 		t.Id,
 		t.Category.String(),
 		t.Msg,
 		formatDatetime(t.CreatedAt),
-		formatDatetime(t.PlannedAt))
+		formatDatetime(t.PlannedAt),
+		t.Done)
 }
 
 func PrintTasks(out io.Writer, tasks ...Task) {

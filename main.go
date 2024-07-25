@@ -20,9 +20,9 @@ func RealMain() int {
 	}
 
 	// runs main CLI routine
-	RunTaskManagmentCLI(taskHolder)
+	returnCode := RunTaskManagmentCLI(taskHolder)
 
-	return 0
+	return returnCode
 }
 
 func InitialMain() (*TaskHolder, bool, int) {
