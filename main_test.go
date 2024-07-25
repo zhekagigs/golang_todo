@@ -68,7 +68,7 @@ func TestMainAndPrintHelp(t *testing.T) {
 			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ContinueOnError)
 			os.Args = tt.args
 
-			_, _, actualExit := ConfigureMain()
+			_, _, actualExit := InitialMain()
 
 			// Close the write end of the pipe
 			write.Close()

@@ -77,3 +77,10 @@ func BeerAscii() string {
 	check(err)
 	return string(data)
 }
+
+func stringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

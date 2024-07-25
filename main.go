@@ -11,31 +11,21 @@ func main() {
 	os.Exit(RealMain())
 }
 
-type commands string
 
-const (
-	READ   commands = "read"
-	CREATE commands = "create"
-	UPDATE commands = "update"
-	DELETE commands = "delete"
-	EXIT   commands = "exit"
-)
 
 func RealMain() int {
-	// readCmnd := flag.NewFlagSet(string(READ), flag.ExitOnError)
-	// createCmnd := flag.NewFlagSet(string(CREATE), flag.ExitOnError)
-	// updateCmnd := flag.NewFlagSet(string(UPDATE), flag.ExitOnError)
-	// deleteCmnd := flag.NewFlagSet(string(DELETE), flag.ExitOnError)
-	taskHolder, checkExit, exitCode := ConfigureMain()
+	taskHolder, checkExit, exitCode := InitialMain()
 	if checkExit {
 		return exitCode
 	}
+
+	// runs main CLI routine
 	RunTaskManagmentCLI(taskHolder)
 
 	return 0
 }
 
-func ConfigureMain() (*TaskHolder, bool, int) {
+func InitialMain() (*TaskHolder, bool, int) {
 	helpFlag := flag.Bool("h", false, "Help is here")
 
 	flag.Usage = printHelp
