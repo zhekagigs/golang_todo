@@ -4,14 +4,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/zhekagigs/golang_todo/cli"
+	"github.com/zhekagigs/golang_todo/internal"
 	"os"
 )
 
 func main() {
 	os.Exit(RealMain())
 }
-
-
 
 func RealMain() int {
 	taskHolder, checkExit, exitCode := InitialMain()
@@ -20,12 +20,12 @@ func RealMain() int {
 	}
 
 	// runs main CLI routine
-	returnCode := RunTaskManagmentCLI(taskHolder)
+	returnCode := cli.RunTaskManagmentCLI(taskHolder)
 
 	return returnCode
 }
 
-func InitialMain() (*TaskHolder, bool, int) {
+func InitialMain() (*internal.TaskHolder, bool, int) {
 	helpFlag := flag.Bool("h", false, "Help is here")
 
 	flag.Usage = printHelp
@@ -44,8 +44,7 @@ func InitialMain() (*TaskHolder, bool, int) {
 	}
 
 	fileName := flag.Arg(0)
-
-	savedTasks, err := ReadFromJson(fileName)
+	savedTasks, err := internal.ReadFromJson(fileName)
 	if err != nil {
 		switch {
 		case errors.Is(err, os.ErrNotExist):
@@ -56,10 +55,10 @@ func InitialMain() (*TaskHolder, bool, int) {
 		flag.Usage()
 		return nil, true, 1
 	}
-	fmt.Println(BeerAscii())
+	fmt.Println(internal.BeerAscii())
 	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
-	PrintTasks(os.Stdout, savedTasks...)
-	taskHolder := NewTaskHolder()
+	internal.PrintTasks(os.Stdout, savedTasks...)
+	taskHolder := internal.NewTaskHolder()
 	for _, task := range savedTasks {
 		taskHolder.Add(task)
 	}

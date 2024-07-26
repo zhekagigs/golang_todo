@@ -1,18 +1,1 @@
-[
-  {
-    "Id": 1,
-    "Msg": "Finish Brewing",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-26T09:04:31.658326+01:00",
-    "PlannedAt": "2024-07-30T14:22:00Z"
-  },
-  {
-    "Id": 2,
-    "Msg": "Collate Strategy",
-    "Category": 1,
-    "Done": false,
-    "CreatedAt": "2024-07-26T09:06:28.562745+01:00",
-    "PlannedAt": "2024-07-11T20:11:00Z"
-  }
-]
+null

@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"bufio"
@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	in "github.com/zhekagigs/golang_todo/internal"
 )
 
 type commands string
@@ -19,7 +21,7 @@ const (
 	EXIT   commands = "exit"
 )
 
-func RunTaskManagmentCLI(taskHolder *TaskHolder) int {
+func RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		displayCommands()
@@ -61,7 +63,7 @@ func parseCommand(reader *bufio.Reader) (commands, int, error) {
 	return cmd, taskId, nil
 }
 
-func executeCommand(cmd commands, taskId int, taskHolder *TaskHolder, reader *bufio.Reader) int {
+func executeCommand(cmd commands, taskId int, taskHolder *in.TaskHolder, reader *bufio.Reader) int {
 	var err error
 	switch cmd {
 	case READ:
@@ -85,16 +87,16 @@ func executeCommand(cmd commands, taskId int, taskHolder *TaskHolder, reader *bu
 	return -1 // Continue the loop
 }
 
-func exitApp(taskHolder *TaskHolder) int {
-	fmt.Println("Thank you for using the Task Management CLI. Tasks are saved to `resources/disk.json`. Goodbye!")
-	err := WriteToJson("resources/disk.json", taskHolder.tasks...)
+func exitApp(taskHolder *in.TaskHolder) int {
+	fmt.Println("Thank you for using the Task Management CLI. Tasks are saved to ", taskHolder.DiskPath, " GoodBye!")
+	err := in.WriteToJson(taskHolder.DiskPath, taskHolder.Tasks...)
 	if err != nil {
 		panic(err)
 	}
 	return 0
 }
 
-func deleteTask(taskHolder *TaskHolder, taskId int) error {
+func deleteTask(taskHolder *in.TaskHolder, taskId int) error {
 	err := taskHolder.DeleteTask(taskId)
 	if err != nil {
 		return err
@@ -102,7 +104,7 @@ func deleteTask(taskHolder *TaskHolder, taskId int) error {
 	return err
 }
 
-func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) error {
+func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) error {
 	fmt.Println("Updating task. Press Enter to skip a field if you don't want to update it.")
 
 	// Update task message
@@ -128,8 +130,8 @@ func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) error 
 	}
 
 	// Update task category
-	var category TaskCategory
-	var categoryPtr *TaskCategory
+	var category in.TaskCategory
+	var categoryPtr *in.TaskCategory
 	fmt.Print("Update task category? (y/n): ")
 	updateCategory, _ := reader.ReadString('\n')
 	if strings.ToLower(strings.TrimSpace(updateCategory)) == "y" {
@@ -141,7 +143,7 @@ func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) error 
 		fmt.Print("Enter new category (0-3): ")
 		categoryStr, _ := reader.ReadString('\n')
 		if parsedCategory, err := strconv.Atoi(strings.TrimSpace(categoryStr)); err == nil && parsedCategory >= 0 && parsedCategory <= 3 {
-			category = TaskCategory(parsedCategory)
+			category = in.TaskCategory(parsedCategory)
 			categoryPtr = &category
 		} else {
 			return err
@@ -156,7 +158,7 @@ func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) error 
 	if strings.ToLower(strings.TrimSpace(updatePlannedTime)) == "y" {
 		fmt.Print("Enter new planned time (YYYY-MM-DD HH:MM): ")
 		timeStr, _ := reader.ReadString('\n')
-		if parsedTime, err := time.Parse(TASK_TIME_FORMAT, strings.TrimSpace(timeStr)); err == nil {
+		if parsedTime, err := time.Parse(in.TASK_TIME_FORMAT, strings.TrimSpace(timeStr)); err == nil {
 			plannedAt = parsedTime
 			plannedAtPtr = &plannedAt
 		} else {
@@ -164,9 +166,9 @@ func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) error 
 		}
 	}
 
-	update := TaskUpdate{
+	update := in.TaskUpdate{
 		Done:      donePtr,
-		Msg:       stringPtr(msg),
+		Msg:       in.StringPtr(msg),
 		Category:  categoryPtr,
 		PlannedAt: plannedAtPtr,
 	}
@@ -181,7 +183,7 @@ func updateTask(taskHolder *TaskHolder, taskId int, reader *bufio.Reader) error 
 	return nil
 }
 
-func createTask(taskHolder *TaskHolder, reader *bufio.Reader) error {
+func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error {
 
 	fmt.Println("Enter new task on one line in a format 'task, category, planned to finish date'")
 	fmt.Println("Available categories:")
@@ -207,15 +209,15 @@ func createTask(taskHolder *TaskHolder, reader *bufio.Reader) error {
 	}
 	plannedAt := lines[2]
 	var plannedParsedAt time.Time
-	parsedTime, err := time.Parse(TASK_TIME_FORMAT, strings.TrimSpace(plannedAt))
+	parsedTime, err := time.Parse(in.TASK_TIME_FORMAT, strings.TrimSpace(plannedAt))
 	if err == nil {
 		plannedParsedAt = parsedTime
 	}
-	taskHolder.CreateTask(taskValue, TaskCategory(categoryNum), plannedParsedAt)
+	taskHolder.CreateTask(taskValue, in.TaskCategory(categoryNum), plannedParsedAt)
 	return nil
 }
 
-func readTasks(taskHolder *TaskHolder) {
+func readTasks(taskHolder *in.TaskHolder) {
 	all_tasks := taskHolder.Read()
 	if len(all_tasks) == 0 {
 		fmt.Println("No tasks found.")
@@ -223,5 +225,5 @@ func readTasks(taskHolder *TaskHolder) {
 	}
 
 	fmt.Printf("\nList of tasks:\n\n")
-	PrintTasks(os.Stdout, all_tasks...)
+	in.PrintTasks(os.Stdout, all_tasks...)
 }

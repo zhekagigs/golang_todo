@@ -1,14 +1,10 @@
-package main
+package internal
 
 import (
 	"fmt"
 	"testing"
 	"time"
 )
-
-func ProvideTask(t *testing.T) Task {
-	return NewTask(1, "task_my_task", 1, mockTime)
-}
 
 func TestNewTaskHolder(t *testing.T) {
 	t.Run("Creates a new TaskHolder", func(t *testing.T) {
@@ -21,8 +17,8 @@ func TestNewTaskHolder(t *testing.T) {
 			t.Errorf("got %v, want 0", th.latestId)
 		}
 
-		if len(th.tasks) != 0 {
-			t.Errorf("Expected tasks to be empty, got %d tasks", len(th.tasks))
+		if len(th.Tasks) != 0 {
+			t.Errorf("Expected tasks to be empty, got %d tasks", len(th.Tasks))
 		}
 	})
 }
@@ -32,8 +28,8 @@ func TestAddTask(t *testing.T) {
 		th := NewTaskHolder()
 		task := ProvideTask(t)
 		th.Add(task)
-		if len(th.tasks) != 1 {
-			t.Errorf("Expected tasks to be 1, got %d tasks", len(th.tasks))
+		if len(th.Tasks) != 1 {
+			t.Errorf("Expected tasks to be 1, got %d tasks", len(th.Tasks))
 		}
 		if th.latestId != 1 {
 			t.Errorf("got %v, want 1", th.latestId)
@@ -82,8 +78,8 @@ func TestCreateTask(t *testing.T) {
 		t.Errorf("Expected plannedAt to be %v, got %v", plannedAt, task.PlannedAt)
 	}
 
-	if len(th.tasks) != 1 {
-		t.Errorf("Expected TaskHolder to have 1 task, got %d", len(th.tasks))
+	if len(th.Tasks) != 1 {
+		t.Errorf("Expected TaskHolder to have 1 task, got %d", len(th.Tasks))
 	}
 
 	if th.latestId != 1 {
@@ -292,8 +288,8 @@ func TestDeleteTask(t *testing.T) {
 			t.Errorf("Unexpected error ocuured")
 		}
 
-		if len(th.tasks) != 1 {
-			t.Errorf("got 1 want %d", len(th.tasks))
+		if len(th.Tasks) != 1 {
+			t.Errorf("got 1 want %d", len(th.Tasks))
 		}
 
 		if th.Read()[0].Msg != "Task 2" {

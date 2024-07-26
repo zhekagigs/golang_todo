@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"bytes"
@@ -9,18 +9,6 @@ import (
 	"testing"
 	"time"
 )
-
-var mockTime = time.Date(2023, 7, 23, 12, 0, 0, 0, time.UTC)
-
-func ProvideMocktimeNow(t *testing.T) func() time.Time {
-	originalTimeNow := timeNow
-	t.Cleanup(func() {
-		timeNow = originalTimeNow
-	})
-	return func() time.Time {
-		return mockTime
-	}
-}
 
 func TestMain(m *testing.M) {
 	exitVal := m.Run()
@@ -121,13 +109,13 @@ func TestReadAndWriteJson(t *testing.T) {
 		taskA := NewTask(1, "Brew", 0, TimeExample)
 		taskB := NewTask(2, "Advertise", 1, TimeExample)
 
-		err := WriteToJson("resources/test_tasks.json", taskA, taskB)
+		err := WriteToJson("../resources/test_tasks.json", taskA, taskB)
 
 		if err != nil {
 			t.Errorf("Unexpected err %v", err)
 		}
 
-		got, err := ReadFromJson("resources/test_tasks.json")
+		got, err := ReadFromJson("../resources/test_tasks.json")
 		if err != nil {
 			t.Errorf("ReadFromJson failed!")
 		}

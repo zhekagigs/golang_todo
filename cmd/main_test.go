@@ -48,7 +48,7 @@ func TestMainAndPrintHelp(t *testing.T) {
 		},
 		{
 			name:           "Valid file argument",
-			args:           []string{"cmd", "resources/tasks.json"},
+			args:           []string{"cmd", "../resources/tasks.json"},
 			expectedOutput: []string{"Microbrewery Tasks Application"},
 			expectExit:     0,
 		},

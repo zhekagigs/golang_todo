@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"fmt"
@@ -73,12 +73,15 @@ func generateRandomTasks(count int) []Task {
 }
 
 func BeerAscii() string {
-	data, err := os.ReadFile("resources/beer.txt")
-	check(err)
+	data, err := os.ReadFile("../resources/beer.txt")
+	if err != nil {
+		fmt.Println("error happened while reading beer logo: ", err)
+		return ""
+	}
 	return string(data)
 }
 
-func stringPtr(s string) *string {
+func StringPtr(s string) *string {
 	if s == "" {
 		return nil
 	}

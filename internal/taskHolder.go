@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"fmt"
@@ -14,15 +14,16 @@ type TaskUpdate struct {
 
 type TaskHolder struct {
 	latestId int
-	tasks    []Task
+	Tasks    []Task
+	DiskPath string
 }
 
 func NewTaskHolder() *TaskHolder {
-	return &TaskHolder{}
+	return &TaskHolder{DiskPath: "../resources/disk.json"}
 }
 
 func (t *TaskHolder) Read() []Task {
-	return t.tasks
+	return t.Tasks
 }
 
 func (t *TaskHolder) Add(task Task) {
@@ -30,21 +31,21 @@ func (t *TaskHolder) Add(task Task) {
 	if task.Id < t.latestId {
 		task.Id = t.latestId
 	}
-	t.tasks = append(t.tasks, task)
+	t.Tasks = append(t.Tasks, task)
 
 }
 
 func (t *TaskHolder) CreateTask(taskValue string, category TaskCategory, plannedAt time.Time) *Task {
 	t.latestId++
 	task := NewTask(t.latestId, taskValue, category, plannedAt)
-	t.tasks = append(t.tasks, task)
+	t.Tasks = append(t.Tasks, task)
 	return &task
 }
 
 func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) {
-	for i := range t.tasks {
-		if t.tasks[i].Id == taskId {
-			return &t.tasks[i], nil
+	for i := range t.Tasks {
+		if t.Tasks[i].Id == taskId {
+			return &t.Tasks[i], nil
 		}
 	}
 	return nil, ErrNotFound
@@ -86,7 +87,7 @@ func (t *TaskHolder) PartialUpdateTask(taskId int, update TaskUpdate) error {
 
 func (t *TaskHolder) DeleteTask(taskId int) error {
 	index := -1
-	for i, task := range t.tasks {
+	for i, task := range t.Tasks {
 		if task.Id == taskId {
 			index = i
 			break
@@ -97,7 +98,7 @@ func (t *TaskHolder) DeleteTask(taskId int) error {
 		return fmt.Errorf("task with ID %d not found", taskId)
 	}
 
-	t.tasks = append(t.tasks[:index], t.tasks[index+1:]...)
+	t.Tasks = append(t.Tasks[:index], t.Tasks[index+1:]...)
 
 	return nil
 }

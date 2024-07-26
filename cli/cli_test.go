@@ -1,54 +1,37 @@
-package main
+package cli
 
 import (
 	"bufio"
-	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 	"time"
+
+	in "github.com/zhekagigs/golang_todo/internal"
 )
-
-// captureOutput captures stdout and returns it as a string
-func captureOutput(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.String()
-}
 
 func TestReadTasks(t *testing.T) {
 	tests := []struct {
 		name       string
-		setupTasks func(*TaskHolder)
+		setupTasks func(*in.TaskHolder)
 		expected   string
 	}{
 		{
 			name:       "No tasks",
-			setupTasks: func(th *TaskHolder) {},
+			setupTasks: func(th *in.TaskHolder) {},
 			expected:   "No tasks found.\n",
 		},
 		{
 			name: "Single task",
-			setupTasks: func(th *TaskHolder) {
-				th.CreateTask("Test task 1", Brewing, mockTime)
+			setupTasks: func(th *in.TaskHolder) {
+				th.CreateTask("Test task 1", in.Brewing, in.MockTime)
 			},
 			expected: "\nList of tasks:\n\nid:1,[Brewing] Test task 1",
 		},
 		{
 			name: "Multiple tasks",
-			setupTasks: func(th *TaskHolder) {
-				th.CreateTask("Task 1", Brewing, mockTime)
-				th.CreateTask("Task 2", Marketing, mockTime)
+			setupTasks: func(th *in.TaskHolder) {
+				th.CreateTask("Task 1", in.Brewing, in.MockTime)
+				th.CreateTask("Task 2", in.Marketing, in.MockTime)
 			},
 			expected: "\nList of tasks:\n\nid:1,[Brewing] Task 1",
 		},
@@ -56,14 +39,13 @@ func TestReadTasks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := NewTaskHolder()
+			taskHolder := in.NewTaskHolder()
 			tt.setupTasks(taskHolder)
 
-			output := captureOutput(func() {
-				readTasks(taskHolder)
-			})
-
-			// fmt.Println(output)
+			old, r, w := in.CaptureStdout()
+			readTasks(taskHolder)
+			in.RestoreStdout(w, old)
+			output := in.ReadCapturedStdout(r)
 
 			if !strings.HasPrefix(output, tt.expected) {
 				t.Errorf("got %v, want %v", output, tt.expected)
@@ -86,23 +68,23 @@ func TestCreateCLITask(t *testing.T) {
 		name          string
 		input         string
 		expectedError bool
-		expectedTask  func(*testing.T, *Task)
+		expectedTask  func(*testing.T, *in.Task)
 	}{
 		{
 			name:          "Valid input",
 			input:         "Finish brewing IPA, 0, 2024-08-29 14:27\n",
 			expectedError: false,
-			expectedTask: func(t *testing.T, task *Task) {
+			expectedTask: func(t *testing.T, task *in.Task) {
 				if task == nil {
 					t.Fatal("Expected task to be created, but it was nil")
 				}
 				if task.Msg != "Finish brewing IPA" {
 					t.Errorf("Expected task message to be 'Finish brewing IPA', got '%s'", task.Msg)
 				}
-				if task.Category != Brewing {
-					t.Errorf("Expected task category to be Brewing, got %v", task.Category)
+				if task.Category != in.Brewing {
+					t.Errorf("Expected task category to be in.Brewing, got %v", task.Category)
 				}
-				expectedTime, _ := time.Parse(TASK_TIME_FORMAT, "2024-08-29 14:27")
+				expectedTime, _ := time.Parse(in.TASK_TIME_FORMAT, "2024-08-29 14:27")
 				if !task.PlannedAt.Equal(expectedTime) {
 					t.Errorf("Expected planned time to be %v, got %v", expectedTime, task.PlannedAt)
 				}
@@ -112,7 +94,7 @@ func TestCreateCLITask(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := NewTaskHolder()
+			taskHolder := in.NewTaskHolder()
 			reader := bufio.NewReader(strings.NewReader(tt.input))
 
 			err := createTask(taskHolder, reader)
@@ -136,18 +118,18 @@ func TestCreateCLITask(t *testing.T) {
 }
 
 func TestDeleteCLITask(t *testing.T) {
-	setupTaskHolder := func() *TaskHolder {
-		th := NewTaskHolder()
-		th.CreateTask("Task 1", Brewing, time.Now().Add(24*time.Hour))
-		th.CreateTask("Task 2", Marketing, time.Now().Add(48*time.Hour))
-		th.CreateTask("Task 3", Logistics, time.Now().Add(72*time.Hour))
+	setupTaskHolder := func() *in.TaskHolder {
+		th := in.NewTaskHolder()
+		th.CreateTask("in.Task 1", in.Brewing, time.Now().Add(24*time.Hour))
+		th.CreateTask("in.Task 2", in.Marketing, time.Now().Add(48*time.Hour))
+		th.CreateTask("in.Task 3", in.Logistics, time.Now().Add(72*time.Hour))
 		return th
 	}
 
 	tests := []struct {
 		name          string
 		taskId        int
-		setupHolder   func() *TaskHolder
+		setupHolder   func() *in.TaskHolder
 		expectedError bool
 		expectedTasks int
 	}{
@@ -166,10 +148,10 @@ func TestDeleteCLITask(t *testing.T) {
 			expectedTasks: 3,
 		},
 		{
-			name:   "Delete from empty TaskHolder",
+			name:   "Delete from empty in.in.TaskHolder",
 			taskId: 1,
-			setupHolder: func() *TaskHolder {
-				return NewTaskHolder()
+			setupHolder: func() *in.TaskHolder {
+				return in.NewTaskHolder()
 			},
 			expectedError: true,
 			expectedTasks: 0,
@@ -197,7 +179,7 @@ func TestDeleteCLITask(t *testing.T) {
 			if !tt.expectedError {
 				for _, task := range remainingTasks {
 					if task.Id == tt.taskId {
-						t.Errorf("Task with ID %d should have been deleted, but it still exists", tt.taskId)
+						t.Errorf("in.Task with ID %d should have been deleted, but it still exists", tt.taskId)
 					}
 				}
 			}
@@ -206,11 +188,6 @@ func TestDeleteCLITask(t *testing.T) {
 }
 
 func TestUpdateTask(t *testing.T) {
-	setupTaskHolder := func() *TaskHolder {
-		th := NewTaskHolder()
-		th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
-		return th
-	}
 
 	tests := []struct {
 		name           string
@@ -218,7 +195,7 @@ func TestUpdateTask(t *testing.T) {
 		input          string
 		expectedOutput string
 		expectedError  bool
-		validateTask   func(*testing.T, *Task)
+		validateTask   func(*testing.T, *in.Task)
 	}{
 		{
 			name:           "Update all fields",
@@ -226,17 +203,17 @@ func TestUpdateTask(t *testing.T) {
 			input:          "New Task Description\ny\ntrue\ny\n2\ny\n2025-07-01 10:00\n",
 			expectedOutput: "Task updated successfully.",
 			expectedError:  false,
-			validateTask: func(t *testing.T, task *Task) {
+			validateTask: func(t *testing.T, task *in.Task) {
 				if task.Msg != "New Task Description" {
 					t.Errorf("Expected task message to be 'New Task Description', got '%s'", task.Msg)
 				}
 				if !task.Done {
 					t.Errorf("Expected task to be done")
 				}
-				if task.Category != Logistics {
+				if task.Category != in.Logistics {
 					t.Errorf("Expected task category to be Logistics, got %v", task.Category)
 				}
-				expectedTime, _ := time.Parse(TASK_TIME_FORMAT, "2025-07-01 10:00")
+				expectedTime, _ := time.Parse(in.TASK_TIME_FORMAT, "2025-07-01 10:00")
 				if !task.PlannedAt.Equal(expectedTime) {
 					t.Errorf("Expected planned time to be %v, got %v", expectedTime, task.PlannedAt)
 				}
@@ -248,15 +225,15 @@ func TestUpdateTask(t *testing.T) {
 			input:          "\nn\nn\nn\n",
 			expectedOutput: "Task updated successfully.",
 			expectedError:  false,
-			validateTask: func(t *testing.T, task *Task) {
-				// Task should remain unchanged
+			validateTask: func(t *testing.T, task *in.Task) {
+				// in.Task should remain unchanged
 				if task.Msg != "Initial Task" {
 					t.Errorf("Expected task message to be 'Initial Task', got '%s'", task.Msg)
 				}
 				if task.Done {
 					t.Errorf("Expected task to be not done")
 				}
-				if task.Category != Brewing {
+				if task.Category != in.Brewing {
 					t.Errorf("Expected task category to be Brewing, got %v", task.Category)
 				}
 			},
@@ -293,28 +270,22 @@ func TestUpdateTask(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := setupTaskHolder()
+			taskHolder := in.ProvideTaskHolder()
 
 			// Prepare input and output
 			input := strings.NewReader(tt.input)
 			reader := bufio.NewReader(input)
 
-			// Capture stdout
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
+			oldStdout, r, w := in.CaptureStdout()
 
 			// Run the function
 			err := updateTask(taskHolder, tt.taskId, reader)
 
 			// Restore stdout
-			w.Close()
-			os.Stdout = oldStdout
+			in.RestoreStdout(w, oldStdout)
 
 			// Read captured output
-			var buf bytes.Buffer
-			io.Copy(&buf, r)
-			output := buf.String()
+			output := in.ReadCapturedStdout(r)
 
 			// Check for expected error
 			if tt.expectedError && err == nil {
@@ -333,7 +304,7 @@ func TestUpdateTask(t *testing.T) {
 			if !tt.expectedError && tt.validateTask != nil {
 				tasks := taskHolder.Read()
 				if len(tasks) == 0 {
-					t.Fatal("No tasks found in TaskHolder")
+					t.Fatal("No tasks found in in.TaskHolder")
 				}
 				tt.validateTask(t, &tasks[0])
 			}
@@ -384,7 +355,7 @@ func TestExecuteCommand(t *testing.T) {
 		name        string
 		cmd         commands
 		taskId      int
-		setup       func(*TaskHolder)
+		setup       func(*in.TaskHolder)
 		input       string
 		expectExit  int
 		expectError bool
@@ -393,14 +364,14 @@ func TestExecuteCommand(t *testing.T) {
 			name:       "Read command",
 			cmd:        READ,
 			taskId:     0,
-			setup:      func(th *TaskHolder) {},
+			setup:      func(th *in.TaskHolder) {},
 			expectExit: -1,
 		},
 		{
 			name:       "Create command",
 			cmd:        CREATE,
 			taskId:     0,
-			setup:      func(th *TaskHolder) {},
+			setup:      func(th *in.TaskHolder) {},
 			input:      "New Task, 0, 2023-07-01 10:00\n",
 			expectExit: -1,
 		},
@@ -408,8 +379,8 @@ func TestExecuteCommand(t *testing.T) {
 			name:   "Update command",
 			cmd:    UPDATE,
 			taskId: 1,
-			setup: func(th *TaskHolder) {
-				th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+			setup: func(th *in.TaskHolder) {
+				th.CreateTask("Initial Task", in.Brewing, time.Now().Add(24*time.Hour))
 			},
 			input:      "Updated Task\ny\ntrue\nn\nn\n",
 			expectExit: -1,
@@ -418,8 +389,8 @@ func TestExecuteCommand(t *testing.T) {
 			name:   "Delete command",
 			cmd:    DELETE,
 			taskId: 1,
-			setup: func(th *TaskHolder) {
-				th.CreateTask("Task to Delete", Brewing, time.Now().Add(24*time.Hour))
+			setup: func(th *in.TaskHolder) {
+				th.CreateTask("Task to Delete", in.Brewing, time.Now().Add(24*time.Hour))
 			},
 			expectExit: -1,
 		},
@@ -427,14 +398,14 @@ func TestExecuteCommand(t *testing.T) {
 			name:       "Exit command",
 			cmd:        EXIT,
 			taskId:     0,
-			setup:      func(th *TaskHolder) {},
+			setup:      func(th *in.TaskHolder) {},
 			expectExit: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := NewTaskHolder()
+			taskHolder := in.NewTaskHolder()
 			tt.setup(taskHolder)
 
 			reader := bufio.NewReader(strings.NewReader(tt.input))
@@ -449,4 +420,46 @@ func TestExecuteCommand(t *testing.T) {
 			// For example, check if a task was created, updated, or deleted
 		})
 	}
+}
+
+func TestRunCLI(t *testing.T) {
+	// t.Skip("Not ready")
+	taskHolder := in.ProvideTaskHolder()
+
+	oldstd, read, write := in.CaptureStdout()
+	oldstdIn, inRead, inWrite := in.CaptureStdin()
+
+	cmnds := []string{
+		"read\n",
+		"create\nNew task, 1, 2024-08-01 10:00\n",
+		"read\n",
+		"update 2\ny\nUpdated task\ny\n2\ny\n2024-08-02 11:00\n",
+		"read\n",
+		"delete 2\n",
+		"read\n",
+		"exit\n",
+	}
+
+	go func() {
+		RunTaskManagmentCLI(taskHolder)
+	}()
+
+	in.WriteToCapturedStdin(inWrite, cmnds)
+
+	in.RestoreStdout(write, oldstd)
+	in.RestoreStdin(inRead, oldstdIn)
+	output := in.ReadCapturedStdout(read)
+	expectedOutputs := []string{
+		"Available Commands: read, create, update, delete, exit",
+		"id:1,[Brewing] Initial Task",
+		"id:2,[Marketing] New task",
+		"Enter Command: Thank you for using the Task Management CLI. Tasks are saved to",
+	}
+
+	for _, expected := range expectedOutputs {
+		if !strings.Contains(output, expected) {
+			t.Errorf("Expected output to contain %q, but it didn't.\nGot: %s", expected, output)
+		}
+	}
+
 }
