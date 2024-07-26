@@ -58,7 +58,6 @@ func InitialMain() (*TaskHolder, bool, int) {
 	}
 	fmt.Println(BeerAscii())
 	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
-	fmt.Println(savedTasks)
 	PrintTasks(os.Stdout, savedTasks...)
 	taskHolder := NewTaskHolder()
 	for _, task := range savedTasks {

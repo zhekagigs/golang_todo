@@ -20,48 +20,69 @@ const (
 )
 
 func RunTaskManagmentCLI(taskHolder *TaskHolder) int {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Println("\nAvailable Commands: read, create, update, delete")
-		fmt.Print("Enter Command: ")
-		cmdString, _ := reader.ReadString('\n')
-		parts := strings.Fields(cmdString)
-		cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+    reader := bufio.NewReader(os.Stdin)
+    for {
+        displayCommands()
+        cmd, taskId, err := parseCommand(reader)
+        if err != nil {
+            fmt.Println(err)
+            continue
+        }
+        
+        if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 {
+            return exitCode
+        }
+    }
+}
 
-		if len(parts) == 0 {
-			fmt.Println("Please enter a command.")
-			continue
-		}
-		var taskId int
-		var err error
+func displayCommands() {
+    fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
+    fmt.Print("Enter Command: ")
+}
 
-		if len(parts) > 1 && (cmd == UPDATE || cmd == DELETE) {
-			taskId, err = strconv.Atoi(parts[1])
-			if err != nil {
-				fmt.Println("Invalid task ID. Please enter a number.")
-				continue
-			}
-		}
+func parseCommand(reader *bufio.Reader) (commands, int, error) {
+    cmdString, _ := reader.ReadString('\n')
+    parts := strings.Fields(cmdString)
+    if len(parts) == 0 {
+        return "", 0, fmt.Errorf("Please enter a command.")
+    }
+    
+    cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+    
+    var taskId int
+    var err error
+    if len(parts) > 1 && (cmd == UPDATE || cmd == DELETE) {
+        taskId, err = strconv.Atoi(parts[1])
+        if err != nil {
+            return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
+        }
+    }
+    
+    return cmd, taskId, nil
+}
 
-		switch cmd {
-		case READ:
-			readTasks(taskHolder)
-		case CREATE:
-			err = createTask(taskHolder, reader)
-		case UPDATE:
-			err = updateTask(taskHolder, taskId, reader)
-		case DELETE:
-			err = deleteTask(taskHolder, taskId)
-		case EXIT:
-			return exitApp(taskHolder)
-		default:
-			fmt.Println("Invalid command. Please try again.")
-		}
-		if err != nil {
-			fmt.Println("failed operation with error: ", err)
-			continue
-		}
-	}
+func executeCommand(cmd commands, taskId int, taskHolder *TaskHolder, reader *bufio.Reader) int {
+    var err error
+    switch cmd {
+    case READ:
+        readTasks(taskHolder)
+    case CREATE:
+        err = createTask(taskHolder, reader)
+    case UPDATE:
+        err = updateTask(taskHolder, taskId, reader)
+    case DELETE:
+        err = deleteTask(taskHolder, taskId)
+    case EXIT:
+        return exitApp(taskHolder)
+    default:
+        fmt.Println("Invalid command. Please try again.")
+    }
+    
+    if err != nil {
+        fmt.Println("Failed operation with error: ", err)
+    }
+    
+    return -1 // Continue the loop
 }
 
 func exitApp(taskHolder *TaskHolder) int {

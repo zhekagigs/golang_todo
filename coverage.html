@@ -55,15 +55,15 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/cli.go (68.8%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/cli.go (82.9%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/main.go (81.6%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/main.go (81.1%)</option>
 				
 				<option value="file2">github.com/zhekagigs/golang_todo/task.go (80.8%)</option>
 				
 				<option value="file3">github.com/zhekagigs/golang_todo/taskHolder.go (100.0%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/utils.go (100.0%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/utils.go (97.9%)</option>
 				
 				</select>
 			</div>
@@ -98,55 +98,79 @@ const (
         EXIT   commands = "exit"
 )
 
-func RunTaskManagmentCLI(taskHolder *TaskHolder) <span class="cov0" title="0">{
-        reader := bufio.NewReader(os.Stdin)
-
-        for </span><span class="cov0" title="0">{
-                fmt.Println("\nAvailable Commands: read, create, update, delete")
-                fmt.Print("Enter Command: ")
-                cmdString, _ := reader.ReadString('\n')
-                parts := strings.Fields(cmdString)
-                cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
-
-                if len(parts) == 0 </span><span class="cov0" title="0">{
-                        fmt.Println("Please enter a command.")
-                        continue</span>
-                }
-                <span class="cov0" title="0">var taskId int
-                var err error
-
-                if len(parts) &gt; 1 &amp;&amp; (cmd == UPDATE || cmd == DELETE) </span><span class="cov0" title="0">{
-                        taskId, err = strconv.Atoi(parts[1])
-                        if err != nil </span><span class="cov0" title="0">{
-                                fmt.Println("Invalid task ID. Please enter a number.")
-                                continue</span>
-                        }
-                }
-
-                <span class="cov0" title="0">switch cmd </span>{
-                case READ:<span class="cov0" title="0">
-                        readTasks(taskHolder)</span>
-                case CREATE:<span class="cov0" title="0">
-                        err = createTask(taskHolder, reader)</span>
-                case UPDATE:<span class="cov0" title="0">
-                        err = updateTask(taskHolder, taskId, reader)</span>
-                case DELETE:<span class="cov0" title="0">
-                        err = deleteTask(taskHolder, taskId)</span>
-                case EXIT:<span class="cov0" title="0">
-                        exitApp()</span>
-                default:<span class="cov0" title="0">
-                        fmt.Println("Invalid command. Please try again.")</span>
-                }
-                <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
-                        fmt.Println("failed operation with error: ", err)
-                        continue</span>
-                }
-
+func RunTaskManagmentCLI(taskHolder *TaskHolder) int <span class="cov0" title="0">{
+    reader := bufio.NewReader(os.Stdin)
+    for </span><span class="cov0" title="0">{
+        displayCommands()
+        cmd, taskId, err := parseCommand(reader)
+        if err != nil </span><span class="cov0" title="0">{
+            fmt.Println(err)
+            continue</span>
         }
+        
+        <span class="cov0" title="0">if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 </span><span class="cov0" title="0">{
+            return exitCode
+        }</span>
+    }
 }
 
-func exitApp() <span class="cov0" title="0">{
-        panic("unimplemented")</span>
+func displayCommands() <span class="cov0" title="0">{
+    fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
+    fmt.Print("Enter Command: ")
+}</span>
+
+func parseCommand(reader *bufio.Reader) (commands, int, error) <span class="cov8" title="1">{
+    cmdString, _ := reader.ReadString('\n')
+    parts := strings.Fields(cmdString)
+    if len(parts) == 0 </span><span class="cov8" title="1">{
+        return "", 0, fmt.Errorf("Please enter a command.")
+    }</span>
+    
+    <span class="cov8" title="1">cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+    
+    var taskId int
+    var err error
+    if len(parts) &gt; 1 &amp;&amp; (cmd == UPDATE || cmd == DELETE) </span><span class="cov8" title="1">{
+        taskId, err = strconv.Atoi(parts[1])
+        if err != nil </span><span class="cov8" title="1">{
+            return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
+        }</span>
+    }
+    
+    <span class="cov8" title="1">return cmd, taskId, nil</span>
+}
+
+func executeCommand(cmd commands, taskId int, taskHolder *TaskHolder, reader *bufio.Reader) int <span class="cov8" title="1">{
+    var err error
+    switch cmd </span>{
+    case READ:<span class="cov8" title="1">
+        readTasks(taskHolder)</span>
+    case CREATE:<span class="cov8" title="1">
+        err = createTask(taskHolder, reader)</span>
+    case UPDATE:<span class="cov8" title="1">
+        err = updateTask(taskHolder, taskId, reader)</span>
+    case DELETE:<span class="cov8" title="1">
+        err = deleteTask(taskHolder, taskId)</span>
+    case EXIT:<span class="cov8" title="1">
+        return exitApp(taskHolder)</span>
+    default:<span class="cov0" title="0">
+        fmt.Println("Invalid command. Please try again.")</span>
+    }
+    
+    <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+        fmt.Println("Failed operation with error: ", err)
+    }</span>
+    
+    <span class="cov8" title="1">return -1</span> // Continue the loop
+}
+
+func exitApp(taskHolder *TaskHolder) int <span class="cov8" title="1">{
+        fmt.Println("Thank you for using the Task Management CLI. Tasks are saved to `resources/disk.json`. Goodbye!")
+        err := WriteToJson("resources/disk.json", taskHolder.tasks...)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+        <span class="cov8" title="1">return 0</span>
 }
 
 func deleteTask(taskHolder *TaskHolder, taskId int) error <span class="cov8" title="1">{
@@ -280,8 +304,6 @@ func readTasks(taskHolder *TaskHolder) <span class="cov8" title="1">{
         <span class="cov8" title="1">fmt.Printf("\nList of tasks:\n\n")
         PrintTasks(os.Stdout, all_tasks...)</span>
 }
-
-
 </pre>
 		
 		<pre class="file" id="file1" style="display: none">package main
@@ -306,9 +328,9 @@ func RealMain() int <span class="cov0" title="0">{
         }</span>
 
         // runs main CLI routine
-        <span class="cov0" title="0">RunTaskManagmentCLI(taskHolder)
+        <span class="cov0" title="0">returnCode := RunTaskManagmentCLI(taskHolder)
 
-        return 0</span>
+        return returnCode</span>
 }
 
 func InitialMain() (*TaskHolder, bool, int) <span class="cov8" title="1">{
@@ -344,7 +366,6 @@ func InitialMain() (*TaskHolder, bool, int) <span class="cov8" title="1">{
         }
         <span class="cov8" title="1">fmt.Println(BeerAscii())
         fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
-        fmt.Println(savedTasks)
         PrintTasks(os.Stdout, savedTasks...)
         taskHolder := NewTaskHolder()
         for _, task := range savedTasks </span><span class="cov8" title="1">{
@@ -651,7 +672,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)

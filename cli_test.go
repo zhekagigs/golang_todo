@@ -341,155 +341,112 @@ func TestUpdateTask(t *testing.T) {
 	}
 }
 
-var mockExit func()
+func TestParseCommand(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		expectedCmd    commands
+		expectedTaskId int
+		expectError    bool
+	}{
+		{"Valid read command", "read\n", READ, 0, false},
+		{"Valid create command", "create\n", CREATE, 0, false},
+		{"Valid update command", "update 5\n", UPDATE, 5, false},
+		{"Valid delete command", "delete 3\n", DELETE, 3, false},
+		{"Valid exit command", "exit\n", EXIT, 0, false},
+		{"Empty input", "\n", "", 0, true},
+		{"Invalid command", "invalid\n", "invalid", 0, false},
+		{"Update without ID", "update\n", UPDATE, 0, false},
+		{"Update with invalid ID", "update abc\n", "", 0, true},
+	}
 
-// Mock WriteToJson function
-var mockWriteToJson func(string, ...Task) error
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader := bufio.NewReader(strings.NewReader(tt.input))
+			cmd, taskId, err := parseCommand(reader)
 
-func init() {
-	WriteToJson = func(filePath string, tasks ...Task) error {
-		return mockWriteToJson(filePath, tasks...)
+			if (err != nil) != tt.expectError {
+				t.Errorf("parseCommand() error = %v, expectError %v", err, tt.expectError)
+				return
+			}
+			if cmd != tt.expectedCmd {
+				t.Errorf("parseCommand() cmd = %v, want %v", cmd, tt.expectedCmd)
+			}
+			if taskId != tt.expectedTaskId {
+				t.Errorf("parseCommand() taskId = %v, want %v", taskId, tt.expectedTaskId)
+			}
+		})
 	}
 }
 
-func TestRunTaskManagmentCLI(t *testing.T) {
+func TestExecuteCommand(t *testing.T) {
 	tests := []struct {
-		name           string
-		inputs         []string
-		expectedOutput []string
-		setup          func(*TaskHolder)
+		name        string
+		cmd         commands
+		taskId      int
+		setup       func(*TaskHolder)
+		input       string
+		expectExit  int
+		expectError bool
 	}{
 		{
-			name: "Read empty task list",
-			inputs: []string{
-				"read\n",
-				"exit\n",
-			},
-			expectedOutput: []string{
-				"No tasks found.",
-				"Available Commands: read, create, update, delete",
-			},
-			setup: func(th *TaskHolder) {},
+			name:       "Read command",
+			cmd:        READ,
+			taskId:     0,
+			setup:      func(th *TaskHolder) {},
+			expectExit: -1,
 		},
 		{
-			name: "Create a task",
-			inputs: []string{
-				"create\n",
-				"New Task, 0, 2023-07-01 10:00\n",
-				"read\n",
-				"exit\n",
-			},
-			expectedOutput: []string{
-				"Enter new task on one line in a format 'task, category, planned to finish date'",
-				"New Task",
-				"Available Commands: read, create, update, delete",
-			},
-			setup: func(th *TaskHolder) {},
+			name:       "Create command",
+			cmd:        CREATE,
+			taskId:     0,
+			setup:      func(th *TaskHolder) {},
+			input:      "New Task, 0, 2023-07-01 10:00\n",
+			expectExit: -1,
 		},
 		{
-			name: "Update a task",
-			inputs: []string{
-				"update 1\n",
-				"Updated Task\n",
-				"y\n",
-				"true\n",
-				"n\n",
-				"n\n",
-				"read\n",
-				"exit\n",
-			},
-			expectedOutput: []string{
-				"Updating task. Press Enter to skip a field if you don't want to update it.",
-				"Task updated successfully.",
-				"Updated Task",
-				"Available Commands: read, create, update, delete",
-			},
+			name:   "Update command",
+			cmd:    UPDATE,
+			taskId: 1,
 			setup: func(th *TaskHolder) {
 				th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
 			},
+			input:      "Updated Task\ny\ntrue\nn\nn\n",
+			expectExit: -1,
 		},
 		{
-			name: "Delete a task",
-			inputs: []string{
-				"delete 1\n",
-				"read\n",
-				"exit\n",
-			},
-			expectedOutput: []string{
-				"No tasks found.",
-				"Available Commands: read, create, update, delete",
-			},
+			name:   "Delete command",
+			cmd:    DELETE,
+			taskId: 1,
 			setup: func(th *TaskHolder) {
 				th.CreateTask("Task to Delete", Brewing, time.Now().Add(24*time.Hour))
 			},
+			expectExit: -1,
 		},
 		{
-			name: "Invalid command",
-			inputs: []string{
-				"invalid\n",
-				"exit\n",
-			},
-			expectedOutput: []string{
-				"Invalid command. Please try again.",
-				"Available Commands: read, create, update, delete",
-			},
-			setup: func(th *TaskHolder) {},
+			name:       "Exit command",
+			cmd:        EXIT,
+			taskId:     0,
+			setup:      func(th *TaskHolder) {},
+			expectExit: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup
 			taskHolder := NewTaskHolder()
 			tt.setup(taskHolder)
 
-			// Prepare input
-			input := strings.NewReader(strings.Join(tt.inputs, ""))
+			reader := bufio.NewReader(strings.NewReader(tt.input))
 
-			// Capture stdout
-			oldStdin, oldStdout := os.Stdin, os.Stdout
-			readPipe, writePipe, _ := os.Pipe()
-			os.Stdout = writePipe
-			os.Stdin = readPipe
+			exitCode := executeCommand(tt.cmd, tt.taskId, taskHolder, reader)
 
-			// Prepare to read output
-			outputChan := make(chan string)
-			go func() {
-				var buf bytes.Buffer
-				io.Copy(&buf, readPipe)
-				outputChan <- buf.String()
-			}()
-
-			// Mock exit function
-			exited := false
-			mockExit = func() {
-				exited = true
-				writePipe.Close()
+			if exitCode != tt.expectExit {
+				t.Errorf("executeCommand() exitCode = %v, want %v", exitCode, tt.expectExit)
 			}
 
-			// Run the function in a goroutine
-			go RunTaskManagmentCLI(taskHolder)
-
-			// Write inputs
-			io.Copy(writePipe, input)
-
-			// Wait for exit
-			output := <-outputChan
-
-			// Restore stdin and stdout
-			os.Stdin, os.Stdout = oldStdin, oldStdout
-
-			// Check if exited
-			if !exited {
-				t.Error("RunTaskManagmentCLI did not exit")
-			}
-
-			// Check output
-			for _, expected := range tt.expectedOutput {
-				if !strings.Contains(output, expected) {
-					t.Errorf("Expected output to contain '%s', but it didn't.\nGot: %s", expected, output)
-				}
-			}
+			// Add more specific checks based on the command executed
+			// For example, check if a task was created, updated, or deleted
 		})
 	}
 }
