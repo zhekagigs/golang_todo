@@ -63,7 +63,7 @@
 				
 				<option value="file3">github.com/zhekagigs/golang_todo/taskHolder.go (100.0%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/utils.go (97.9%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/utils.go (89.4%)</option>
 				
 				</select>
 			</div>
@@ -99,69 +99,69 @@ const (
 )
 
 func RunTaskManagmentCLI(taskHolder *TaskHolder) int <span class="cov0" title="0">{
-    reader := bufio.NewReader(os.Stdin)
-    for </span><span class="cov0" title="0">{
-        displayCommands()
-        cmd, taskId, err := parseCommand(reader)
-        if err != nil </span><span class="cov0" title="0">{
-            fmt.Println(err)
-            continue</span>
+        reader := bufio.NewReader(os.Stdin)
+        for </span><span class="cov0" title="0">{
+                displayCommands()
+                cmd, taskId, err := parseCommand(reader)
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Println(err)
+                        continue</span>
+                }
+
+                <span class="cov0" title="0">if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 </span><span class="cov0" title="0">{
+                        return exitCode
+                }</span>
         }
-        
-        <span class="cov0" title="0">if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 </span><span class="cov0" title="0">{
-            return exitCode
-        }</span>
-    }
 }
 
 func displayCommands() <span class="cov0" title="0">{
-    fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
-    fmt.Print("Enter Command: ")
+        fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
+        fmt.Print("Enter Command: ")
 }</span>
 
 func parseCommand(reader *bufio.Reader) (commands, int, error) <span class="cov8" title="1">{
-    cmdString, _ := reader.ReadString('\n')
-    parts := strings.Fields(cmdString)
-    if len(parts) == 0 </span><span class="cov8" title="1">{
-        return "", 0, fmt.Errorf("Please enter a command.")
-    }</span>
-    
-    <span class="cov8" title="1">cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
-    
-    var taskId int
-    var err error
-    if len(parts) &gt; 1 &amp;&amp; (cmd == UPDATE || cmd == DELETE) </span><span class="cov8" title="1">{
-        taskId, err = strconv.Atoi(parts[1])
-        if err != nil </span><span class="cov8" title="1">{
-            return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
+        cmdString, _ := reader.ReadString('\n')
+        parts := strings.Fields(cmdString)
+        if len(parts) == 0 </span><span class="cov8" title="1">{
+                return "", 0, fmt.Errorf("Please enter a command.")
         }</span>
-    }
-    
-    <span class="cov8" title="1">return cmd, taskId, nil</span>
+
+        <span class="cov8" title="1">cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+
+        var taskId int
+        var err error
+        if len(parts) &gt; 1 &amp;&amp; (cmd == UPDATE || cmd == DELETE) </span><span class="cov8" title="1">{
+                taskId, err = strconv.Atoi(parts[1])
+                if err != nil </span><span class="cov8" title="1">{
+                        return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
+                }</span>
+        }
+
+        <span class="cov8" title="1">return cmd, taskId, nil</span>
 }
 
 func executeCommand(cmd commands, taskId int, taskHolder *TaskHolder, reader *bufio.Reader) int <span class="cov8" title="1">{
-    var err error
-    switch cmd </span>{
-    case READ:<span class="cov8" title="1">
-        readTasks(taskHolder)</span>
-    case CREATE:<span class="cov8" title="1">
-        err = createTask(taskHolder, reader)</span>
-    case UPDATE:<span class="cov8" title="1">
-        err = updateTask(taskHolder, taskId, reader)</span>
-    case DELETE:<span class="cov8" title="1">
-        err = deleteTask(taskHolder, taskId)</span>
-    case EXIT:<span class="cov8" title="1">
-        return exitApp(taskHolder)</span>
-    default:<span class="cov0" title="0">
-        fmt.Println("Invalid command. Please try again.")</span>
-    }
-    
-    <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
-        fmt.Println("Failed operation with error: ", err)
-    }</span>
-    
-    <span class="cov8" title="1">return -1</span> // Continue the loop
+        var err error
+        switch cmd </span>{
+        case READ:<span class="cov8" title="1">
+                readTasks(taskHolder)</span>
+        case CREATE:<span class="cov8" title="1">
+                err = createTask(taskHolder, reader)</span>
+        case UPDATE:<span class="cov8" title="1">
+                err = updateTask(taskHolder, taskId, reader)</span>
+        case DELETE:<span class="cov8" title="1">
+                err = deleteTask(taskHolder, taskId)</span>
+        case EXIT:<span class="cov8" title="1">
+                return exitApp(taskHolder)</span>
+        default:<span class="cov0" title="0">
+                fmt.Println("Invalid command. Please try again.")</span>
+        }
+
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                fmt.Println("Failed operation with error: ", err)
+        }</span>
+
+        <span class="cov8" title="1">return -1</span> // Continue the loop
 }
 
 func exitApp(taskHolder *TaskHolder) int <span class="cov8" title="1">{
@@ -268,8 +268,8 @@ func createTask(taskHolder *TaskHolder, reader *bufio.Reader) error <span class=
         fmt.Println("1: Marketing")
         fmt.Println("2: Logistics")
         fmt.Println("3: Quality")
-        fmt.Print("Format time (YYYY-MM-DD HH:MM)")
-        fmt.Print("Example: `Finish brewing IPA, 0, 2024-08-29 14:27`")
+        fmt.Println("Format time (YYYY-MM-DD HH:MM)")
+        fmt.Println("Example: `Finish brewing IPA, 0, 2024-08-29 14:27`")
 
         line, err := reader.ReadString('\n') //TODO unignore errors
         if err != nil </span><span class="cov0" title="0">{
@@ -658,7 +658,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 var category TaskCategory
                 x := rand.Intn(5)
                 switch x </span>{
-                case 0:<span class="cov8" title="1">
+                case 0:<span class="cov0" title="0">
                         verb := brewingVerbs[rand.Intn(len(brewingVerbs))]
                         adj := adjectives[rand.Intn(len(adjectives))]
                         noun := beerTypes[rand.Intn(len(beerTypes))]
@@ -672,7 +672,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
