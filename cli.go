@@ -20,69 +20,69 @@ const (
 )
 
 func RunTaskManagmentCLI(taskHolder *TaskHolder) int {
-    reader := bufio.NewReader(os.Stdin)
-    for {
-        displayCommands()
-        cmd, taskId, err := parseCommand(reader)
-        if err != nil {
-            fmt.Println(err)
-            continue
-        }
-        
-        if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 {
-            return exitCode
-        }
-    }
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		displayCommands()
+		cmd, taskId, err := parseCommand(reader)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 {
+			return exitCode
+		}
+	}
 }
 
 func displayCommands() {
-    fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
-    fmt.Print("Enter Command: ")
+	fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
+	fmt.Print("Enter Command: ")
 }
 
 func parseCommand(reader *bufio.Reader) (commands, int, error) {
-    cmdString, _ := reader.ReadString('\n')
-    parts := strings.Fields(cmdString)
-    if len(parts) == 0 {
-        return "", 0, fmt.Errorf("Please enter a command.")
-    }
-    
-    cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
-    
-    var taskId int
-    var err error
-    if len(parts) > 1 && (cmd == UPDATE || cmd == DELETE) {
-        taskId, err = strconv.Atoi(parts[1])
-        if err != nil {
-            return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
-        }
-    }
-    
-    return cmd, taskId, nil
+	cmdString, _ := reader.ReadString('\n')
+	parts := strings.Fields(cmdString)
+	if len(parts) == 0 {
+		return "", 0, fmt.Errorf("Please enter a command.")
+	}
+
+	cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+
+	var taskId int
+	var err error
+	if len(parts) > 1 && (cmd == UPDATE || cmd == DELETE) {
+		taskId, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
+		}
+	}
+
+	return cmd, taskId, nil
 }
 
 func executeCommand(cmd commands, taskId int, taskHolder *TaskHolder, reader *bufio.Reader) int {
-    var err error
-    switch cmd {
-    case READ:
-        readTasks(taskHolder)
-    case CREATE:
-        err = createTask(taskHolder, reader)
-    case UPDATE:
-        err = updateTask(taskHolder, taskId, reader)
-    case DELETE:
-        err = deleteTask(taskHolder, taskId)
-    case EXIT:
-        return exitApp(taskHolder)
-    default:
-        fmt.Println("Invalid command. Please try again.")
-    }
-    
-    if err != nil {
-        fmt.Println("Failed operation with error: ", err)
-    }
-    
-    return -1 // Continue the loop
+	var err error
+	switch cmd {
+	case READ:
+		readTasks(taskHolder)
+	case CREATE:
+		err = createTask(taskHolder, reader)
+	case UPDATE:
+		err = updateTask(taskHolder, taskId, reader)
+	case DELETE:
+		err = deleteTask(taskHolder, taskId)
+	case EXIT:
+		return exitApp(taskHolder)
+	default:
+		fmt.Println("Invalid command. Please try again.")
+	}
+
+	if err != nil {
+		fmt.Println("Failed operation with error: ", err)
+	}
+
+	return -1 // Continue the loop
 }
 
 func exitApp(taskHolder *TaskHolder) int {
@@ -189,8 +189,8 @@ func createTask(taskHolder *TaskHolder, reader *bufio.Reader) error {
 	fmt.Println("1: Marketing")
 	fmt.Println("2: Logistics")
 	fmt.Println("3: Quality")
-	fmt.Print("Format time (YYYY-MM-DD HH:MM)")
-	fmt.Print("Example: `Finish brewing IPA, 0, 2024-08-29 14:27`")
+	fmt.Println("Format time (YYYY-MM-DD HH:MM)")
+	fmt.Println("Example: `Finish brewing IPA, 0, 2024-08-29 14:27`")
 
 	line, err := reader.ReadString('\n') //TODO unignore errors
 	if err != nil {
