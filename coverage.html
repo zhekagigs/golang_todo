@@ -63,7 +63,7 @@
 				
 				<option value="file3">github.com/zhekagigs/golang_todo/taskHolder.go (100.0%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/utils.go (89.4%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/utils.go (74.5%)</option>
 				
 				</select>
 			</div>
@@ -658,24 +658,24 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 var category TaskCategory
                 x := rand.Intn(5)
                 switch x </span>{
-                case 0:<span class="cov0" title="0">
+                case 0:<span class="cov8" title="1">
                         verb := brewingVerbs[rand.Intn(len(brewingVerbs))]
                         adj := adjectives[rand.Intn(len(adjectives))]
                         noun := beerTypes[rand.Intn(len(beerTypes))]
                         taskValue = strings.Join([]string{verb, adj, noun}, " ")
                         category = Brewing</span>
-                case 1:<span class="cov8" title="1">
+                case 1:<span class="cov0" title="0">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 verb = "Order"
                         }</span>
-                        <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
+                        <span class="cov0" title="0">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
-                        <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
+                        <span class="cov0" title="0">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
                 case 2:<span class="cov8" title="1">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
@@ -683,7 +683,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 case 3:<span class="cov8" title="1">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
-                case 4:<span class="cov8" title="1">
+                case 4:<span class="cov0" title="0">
                         taskValue = qualityTasks[rand.Intn(len(qualityTasks))]
                         category = Quality</span>
 
