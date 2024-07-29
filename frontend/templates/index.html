@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
+        .done { text-decoration: line-through; color: #888; }
+        .category { font-weight: bold; }
+        .brewing { color: #1e88e5; }
+        .marketing { color: #43a047; }
+        .logistics { color: #fb8c00; }
+        .quality { color: #e53935; }
+    </style>
+</head>
+<body>
+    <h1>Task List</h1>
+    
+    {{if .Tasks}}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Task</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Planned At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Tasks}}
+                    <tr>
+                        <td>{{.Id}}</td>
+                        <td class="{{if .Done}}done{{end}}">{{.Msg}}</td>
+                        <td>
+                            <span class="category {{toLowerCase .Category.String}}">
+                                {{.Category.String}}
+                            </span>
+                        </td>
+                        <td>{{if .Done}}Completed{{else}}Pending{{end}}</td>
+                        <td>{{formatDate .CreatedAt}}</td>
+                        <td>{{formatDate .PlannedAt}}</td>
+                    </tr>
+                {{end}}
+            </tbody>
+        </table>
+    {{else}}
+        <p>No tasks found.</p>
+    {{end}}
+
+    <script>
+    </script>
+</body>
+</html>

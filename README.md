@@ -18,4 +18,6 @@ Check `makefile` for other commands.
 
 Main object is `Task` which gets aggregated into `TasksHolder` with CRUD operations available.  
 CLI is responsible for interactive mode.  
-Package structure is simply flat.  
+Few packages in a project - internals most of the logic around tasks plus cli, frontend and rest interafaces.
+Using `html/templates` to serve front-end on base of standart `net/http` server.
+Using `embed` package to integrate asset files in a binary, which creates internal read-only file system.

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bufio"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -21,7 +23,20 @@ const (
 	EXIT   commands = "exit"
 )
 
-func RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
+const (
+	ExitCodeSuccess = 0
+	ExitCodeError   = 1
+)
+
+type CLIApp interface {
+	AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int)
+	RunTaskManagmentCLI(taskHolder *in.TaskHolder) int
+}
+
+type RealCLIApp struct {
+}
+
+func (cli *RealCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		displayCommands()
@@ -35,6 +50,80 @@ func RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
 			return exitCode
 		}
 	}
+}
+
+func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int) {
+	fileName, savedTasks, isHelp, isExit, exitCode := ParseUserArg()
+	if isHelp {
+		return nil, isExit, exitCode
+	}
+	PrintCLITitle(savedTasks)
+
+	taskHolder, err := PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
+	if err != nil {
+		fmt.Printf("Error populating task holder: %v\n", err)
+		return nil, true, ExitCodeError
+	}
+	return taskHolder, false, ExitCodeSuccess
+}
+
+func PrintCLITitle(savedTasks []in.Task) {
+	fmt.Println(in.BeerAscii())
+	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
+	in.PrintTasks(os.Stdout, savedTasks...)
+}
+
+func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, error) {
+	if fileName == "" {
+		fileName = "resources/disk.json"
+	}
+	taskHolder := newTaskHolder(fileName)
+	for _, task := range savedTasks {
+		taskHolder.Add(task)
+	}
+	return taskHolder, nil
+}
+
+func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit bool, exitCode int) {
+	helpFlag := flag.Bool("h", false, "Help is here")
+
+	flag.Usage = PrintHelp
+
+	flag.Parse()
+
+	if *helpFlag {
+		flag.Usage()
+		return "", nil, true, true, ExitCodeSuccess
+	}
+
+	if flag.NArg() < 1 {
+		fmt.Println("Error: JSON file path is required")
+		flag.Usage()
+		return "", nil, true, true, ExitCodeError
+	}
+
+	fileName = flag.Arg(0)
+	savedTasks, err := in.ReadTasksFromJSON(fileName)
+	if err != nil {
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			fmt.Println("Error: Wrong file path")
+		default:
+			fmt.Printf("Error while reading json file: %v\n", err)
+		}
+		flag.Usage()
+		return "", nil, true, true, ExitCodeError
+	}
+	return fileName, savedTasks, false, false, ExitCodeSuccess
+}
+
+func PrintHelp() {
+	fmt.Println("Usage: microbrewery-tasks [options] <json-file-path>")
+	fmt.Println("\nOptions:")
+	flag.PrintDefaults()
+	fmt.Println("\nDescription:")
+	fmt.Println("  This CLI application reads a JSON file containing microbrewery tasks and displays them.")
+	fmt.Println("  Provide the path to the JSON file as an argument.")
 }
 
 func displayCommands() {

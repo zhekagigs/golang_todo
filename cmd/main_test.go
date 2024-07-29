@@ -1,94 +1,52 @@
 package main
 
 import (
-	"bytes"
-	"flag"
-	"io"
-	"os"
-	"strings"
+	"net/http"
 	"testing"
+
+	in "github.com/zhekagigs/golang_todo/internal"
 )
 
-func TestMainAndPrintHelp(t *testing.T) {
+type MockHTTPServer struct {
+	ListenAndServeCalledWith string
+}
 
-	// Save original stdout, args, and flag.CommandLine
-	oldStdout := os.Stdout
-	oldArgs := os.Args
-	oldFlagCommandLine := flag.CommandLine
-	defer func() {
-		// Restore original stdout, args, and flag.CommandLine after all tests
-		os.Stdout = oldStdout
-		os.Args = oldArgs
-		flag.CommandLine = oldFlagCommandLine
-	}()
+func (s *MockHTTPServer) ListenAndServe(addr string, handler http.Handler) error {
+	s.ListenAndServeCalledWith = addr
+	return nil
+}
 
-	tests := []struct {
-		name           string
-		args           []string
-		expectedOutput []string
-		expectExit     int
-	}{
-		{
-			name:           "No arguments",
-			args:           []string{"cmd"},
-			expectedOutput: []string{"Error: JSON file path is required", "Usage: microbrewery-tasks"},
-			expectExit:     1,
-		},
-		{
-			name:           "Wrong file name",
-			args:           []string{"cmd", "wrong_file.garbage"},
-			expectedOutput: []string{"Error while reading json file: invalid file extension: wrong_file.garbage. Expected a .json file", "Usage: microbrewery-tasks"},
-			expectExit:     1,
-		},
-		{
-			name:           "Help flag",
-			args:           []string{"cmd", "-h"},
-			expectedOutput: []string{"Usage: microbrewery-tasks", "Options:", "Description:"},
-			expectExit:     0,
-		},
-		{
-			name:           "Valid file argument",
-			args:           []string{"cmd", "../resources/tasks.json"},
-			expectedOutput: []string{"Microbrewery Tasks Application"},
-			expectExit:     0,
-		},
+type MockCLIApp struct {
+	AppStarterCalled bool
+	RunCLICalled     bool
+}
+
+func (cli *MockCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int) {
+	cli.AppStarterCalled = true
+	taskHolder := in.MockNewTaskHolder("")
+	return taskHolder, false, 0
+}
+
+func (cli *MockCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
+	cli.RunCLICalled = true
+	return 0
+}
+
+func TestRealMain(t *testing.T) {
+	mockServer := &MockHTTPServer{}
+	mockCli := &MockCLIApp{}
+	exitCode := RealMain(in.MockNewTaskHolder, mockServer, mockCli)
+
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0, got %d", exitCode)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create a pipe to capture stdout
-			read, write, err := os.Pipe()
-			defer read.Close()
-
-			if err != nil {
-				panic(err)
-			}
-			os.Stdout = write
-			// Set up a new flag set for each test
-			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ContinueOnError)
-			os.Args = tt.args
-
-			_, _, actualExit := InitialMain()
-
-			// Close the write end of the pipe
-			write.Close()
-
-			// Read output
-			var buf bytes.Buffer
-			io.Copy(&buf, read)
-			output := buf.String()
-
-			// Check if exit was called when expected
-			if tt.expectExit != actualExit {
-				t.Errorf("Expected exit: %v, but got: %v", tt.expectExit, actualExit)
-			}
-
-			// Check for expected output
-			for _, expected := range tt.expectedOutput {
-				if !strings.Contains(output, expected) {
-					t.Errorf("Expected output to contain %q, but it didn't.\nGot: %s", expected, output)
-				}
-			}
-		})
+	if mockServer.ListenAndServeCalledWith != ":8080" {
+		t.Errorf("Expected server to listen on :8080, got %s", mockServer.ListenAndServeCalledWith)
+	}
+	if !mockCli.AppStarterCalled {
+		t.Error("Expected AppStarter to be called")
+	}
+	if !mockCli.RunCLICalled {
+		t.Error("Expected RunTaskManagmentCLI to be called")
 	}
 }

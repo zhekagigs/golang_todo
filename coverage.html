@@ -55,17 +55,19 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (90.2%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (90.4%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (81.1%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (62.5%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/internal/task.go (80.8%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/frontend/frontend.go (34.4%)</option>
 				
-				<option value="file3">github.com/zhekagigs/golang_todo/internal/taskHolder.go (97.6%)</option>
+				<option value="file3">github.com/zhekagigs/golang_todo/internal/task.go (74.3%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/internal/testutils.go (20.0%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/internal/taskHolder.go (97.6%)</option>
 				
-				<option value="file5">github.com/zhekagigs/golang_todo/internal/utils.go (89.8%)</option>
+				<option value="file5">github.com/zhekagigs/golang_todo/internal/testutils.go (18.8%)</option>
+				
+				<option value="file6">github.com/zhekagigs/golang_todo/internal/utils.go (85.7%)</option>
 				
 				</select>
 			</div>
@@ -83,6 +85,8 @@
 
 import (
         "bufio"
+        "errors"
+        "flag"
         "fmt"
         "os"
         "strconv"
@@ -102,7 +106,20 @@ const (
         EXIT   commands = "exit"
 )
 
-func RunTaskManagmentCLI(taskHolder *in.TaskHolder) int <span class="cov8" title="1">{
+const (
+        ExitCodeSuccess = 0
+        ExitCodeError   = 1
+)
+
+type CLIApp interface {
+        AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int)
+        RunTaskManagmentCLI(taskHolder *in.TaskHolder) int
+}
+
+type RealCLIApp struct {
+}
+
+func (cli *RealCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int <span class="cov8" title="1">{
         reader := bufio.NewReader(os.Stdin)
         for </span><span class="cov8" title="1">{
                 displayCommands()
@@ -117,6 +134,80 @@ func RunTaskManagmentCLI(taskHolder *in.TaskHolder) int <span class="cov8" title
                 }</span>
         }
 }
+
+func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int) <span class="cov8" title="1">{
+        fileName, savedTasks, isHelp, isExit, exitCode := ParseUserArg()
+        if isHelp </span><span class="cov8" title="1">{
+                return nil, isExit, exitCode
+        }</span>
+        <span class="cov8" title="1">PrintCLITitle(savedTasks)
+
+        taskHolder, err := PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error populating task holder: %v\n", err)
+                return nil, true, ExitCodeError
+        }</span>
+        <span class="cov8" title="1">return taskHolder, false, ExitCodeSuccess</span>
+}
+
+func PrintCLITitle(savedTasks []in.Task) <span class="cov8" title="1">{
+        fmt.Println(in.BeerAscii())
+        fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
+        in.PrintTasks(os.Stdout, savedTasks...)
+}</span>
+
+func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, error) <span class="cov8" title="1">{
+        if fileName == "" </span><span class="cov0" title="0">{
+                fileName = "resources/disk.json"
+        }</span>
+        <span class="cov8" title="1">taskHolder := newTaskHolder(fileName)
+        for _, task := range savedTasks </span><span class="cov8" title="1">{
+                taskHolder.Add(task)
+        }</span>
+        <span class="cov8" title="1">return taskHolder, nil</span>
+}
+
+func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit bool, exitCode int) <span class="cov8" title="1">{
+        helpFlag := flag.Bool("h", false, "Help is here")
+
+        flag.Usage = PrintHelp
+
+        flag.Parse()
+
+        if *helpFlag </span><span class="cov8" title="1">{
+                flag.Usage()
+                return "", nil, true, true, ExitCodeSuccess
+        }</span>
+
+        <span class="cov8" title="1">if flag.NArg() &lt; 1 </span><span class="cov8" title="1">{
+                fmt.Println("Error: JSON file path is required")
+                flag.Usage()
+                return "", nil, true, true, ExitCodeError
+        }</span>
+
+        <span class="cov8" title="1">fileName = flag.Arg(0)
+        savedTasks, err := in.ReadTasksFromJSON(fileName)
+        if err != nil </span><span class="cov8" title="1">{
+                switch </span>{
+                case errors.Is(err, os.ErrNotExist):<span class="cov0" title="0">
+                        fmt.Println("Error: Wrong file path")</span>
+                default:<span class="cov8" title="1">
+                        fmt.Printf("Error while reading json file: %v\n", err)</span>
+                }
+                <span class="cov8" title="1">flag.Usage()
+                return "", nil, true, true, ExitCodeError</span>
+        }
+        <span class="cov8" title="1">return fileName, savedTasks, false, false, ExitCodeSuccess</span>
+}
+
+func PrintHelp() <span class="cov8" title="1">{
+        fmt.Println("Usage: microbrewery-tasks [options] &lt;json-file-path&gt;")
+        fmt.Println("\nOptions:")
+        flag.PrintDefaults()
+        fmt.Println("\nDescription:")
+        fmt.Println("  This CLI application reads a JSON file containing microbrewery tasks and displays them.")
+        fmt.Println("  Provide the path to the JSON file as an argument.")
+}</span>
 
 func displayCommands() <span class="cov8" title="1">{
         fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
@@ -313,81 +404,146 @@ func readTasks(taskHolder *in.TaskHolder) <span class="cov8" title="1">{
 		<pre class="file" id="file1" style="display: none">package main
 
 import (
-        "errors"
-        "flag"
-        "fmt"
-        "github.com/zhekagigs/golang_todo/cli"
-        "github.com/zhekagigs/golang_todo/internal"
+        "log"
+        "net/http"
         "os"
+        "time"
+
+        "github.com/zhekagigs/golang_todo/cli"
+        "github.com/zhekagigs/golang_todo/frontend"
+        "github.com/zhekagigs/golang_todo/internal"
 )
 
-func main() <span class="cov0" title="0">{
-        os.Exit(RealMain())
+type HTTPServer interface {
+        ListenAndServe(addr string, handler http.Handler) error
+}
+
+type RealHTTPServer struct{}
+
+func (s *RealHTTPServer) ListenAndServe(addr string, handler http.Handler) error <span class="cov0" title="0">{
+        return http.ListenAndServe(addr, handler)
 }</span>
 
-func RealMain() int <span class="cov0" title="0">{
-        taskHolder, checkExit, exitCode := InitialMain()
+func main() <span class="cov0" title="0">{
+        os.Exit(RealMain(internal.NewTaskHolder, &amp;RealHTTPServer{}, &amp;cli.RealCLIApp{}))
+}</span>
+
+func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server HTTPServer, cliApp cli.CLIApp) int <span class="cov8" title="1">{
+        taskHolder, checkExit, exitCode := cliApp.AppStarter(newTaskHolder)
         if checkExit </span><span class="cov0" title="0">{
                 return exitCode
         }</span>
 
-        // runs main CLI routine
-        <span class="cov0" title="0">returnCode := cli.RunTaskManagmentCLI(taskHolder)
+        <span class="cov8" title="1">go startHTTPServer(taskHolder, server)
 
+        returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
+        time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
         return returnCode</span>
 }
 
-func InitialMain() (*internal.TaskHolder, bool, int) <span class="cov8" title="1">{
-        helpFlag := flag.Bool("h", false, "Help is here")
+func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) <span class="cov8" title="1">{
+        http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                frontend.HandleTaskListRead(w, r, taskHolder)
+        }</span>)
 
-        flag.Usage = printHelp
+        <span class="cov8" title="1">http.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                frontend.HandleTaskListCreate(w, r, taskHolder)
+        }</span>)
 
-        flag.Parse()
-
-        if *helpFlag </span><span class="cov8" title="1">{
-                flag.Usage()
-                return nil, true, 0
+        <span class="cov8" title="1">log.Println("Starting server on :8080")
+        if err := server.ListenAndServe(":8080", nil); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to start server: %v", err)
         }</span>
 
-        <span class="cov8" title="1">if flag.NArg() &lt; 1 </span><span class="cov8" title="1">{
-                fmt.Println("Error: JSON file path is required")
-                flag.Usage()
-                return nil, true, 1
-        }</span>
-
-        <span class="cov8" title="1">fileName := flag.Arg(0)
-        savedTasks, err := internal.ReadFromJson(fileName)
-        if err != nil </span><span class="cov8" title="1">{
-                switch </span>{
-                case errors.Is(err, os.ErrNotExist):<span class="cov0" title="0">
-                        fmt.Println("Error: Wrong file path")</span>
-                default:<span class="cov8" title="1">
-                        fmt.Printf("Error while reading json file: %v\n", err)</span>
-                }
-                <span class="cov8" title="1">flag.Usage()
-                return nil, true, 1</span>
-        }
-        <span class="cov8" title="1">fmt.Println(internal.BeerAscii())
-        fmt.Printf("\n&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Microbrewery Tasks Application&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n\n")
-        internal.PrintTasks(os.Stdout, savedTasks...)
-        taskHolder := internal.NewTaskHolder()
-        for _, task := range savedTasks </span><span class="cov8" title="1">{
-                taskHolder.Add(task)
-        }</span>
-        <span class="cov8" title="1">return taskHolder, false, 0</span>
 }
-
-func printHelp() <span class="cov8" title="1">{
-        fmt.Println("Usage: microbrewery-tasks [options] &lt;json-file-path&gt;")
-        fmt.Println("\nOptions:")
-        flag.PrintDefaults()
-        fmt.Println("\nDescription:")
-        fmt.Println("  This CLI application reads a JSON file containing microbrewery tasks and displays them.")
-        fmt.Println("  Provide the path to the JSON file as an argument.")
-}</span>
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package internal
+		<pre class="file" id="file2" style="display: none">package frontend
+
+import (
+        "embed"
+        "html/template"
+        "io"
+        "net/http"
+        "strings"
+        "time"
+
+        in "github.com/zhekagigs/golang_todo/internal"
+)
+
+//go:embed templates/index.html
+var templateFiles embed.FS
+
+type TemplateData struct {
+        Tasks []in.Task
+}
+
+func generateTemplate(indexFile embed.FS) (*template.Template, error) <span class="cov8" title="1">{
+        funcMap := template.FuncMap{
+                "formatDate": func(t time.Time) string </span><span class="cov8" title="1">{
+                        return t.Format("Jan 02, 2006 15:04")
+                }</span>,
+                "toLowerCase": strings.ToLower,
+        }
+
+        <span class="cov8" title="1">tmpl, err := template.New("index.html").Funcs(funcMap).ParseFS(indexFile, "templates/index.html")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return tmpl, nil</span>
+}
+
+func HandleTaskListRead(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov8" title="1">{
+        tmpl, err := generateTemplate(templateFiles)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">tasks := th.Read()
+
+        data := TemplateData{
+                Tasks: tasks,
+        }
+
+        err = tmpl.Execute(w, data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+}
+
+func HandleTaskListCreate(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov0" title="0">{
+        tmpl, err := generateTemplate(templateFiles)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">body, _ := io.ReadAll(r.Body)
+
+        task, err := in.UnmarshalTask(body)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">th.Add(*task)
+
+        tasks := th.Read()
+        data := TemplateData{
+                Tasks: tasks,
+        }
+
+        err = tmpl.Execute(w, data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package internal
 
 import (
         "encoding/json"
@@ -395,6 +551,7 @@ import (
         "fmt"
         "io"
         "os"
+        "path/filepath"
         "strings"
         "time"
 )
@@ -496,26 +653,45 @@ func WriteToJson(filePath string, tasks ...Task) error <span class="cov8" title=
         <span class="cov8" title="1">return nil</span>
 }
 
-func ReadFromJson(filePath string) ([]Task, error) <span class="cov8" title="1">{
-        if !strings.HasSuffix(filePath, ".json") </span><span class="cov8" title="1">{
-                return nil, fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+func ReadTasksFromJSON(filePath string) ([]Task, error) <span class="cov8" title="1">{
+        if err := validateJSONFile(filePath); err != nil </span><span class="cov8" title="1">{
+                return nil, err
         }</span>
 
-        <span class="cov8" title="1">bytes, err := os.ReadFile(filePath)
+        <span class="cov8" title="1">data, err := os.ReadFile(filePath)
         if err != nil </span><span class="cov8" title="1">{
-                return nil, fmt.Errorf("failed to read a file '%s': %w", filePath, err)
+                return nil, fmt.Errorf("failed to read file '%s': %w", filePath, err)
         }</span>
 
-        <span class="cov8" title="1">var tasks []Task
-        if err := json.Unmarshal(bytes, &amp;tasks); err != nil </span><span class="cov0" title="0">{
-                return nil, fmt.Errorf("failed to unmarshal JSON from file '%s': %w", filePath, err)
-        }</span>
+        <span class="cov8" title="1">return UnmarshalTasks(data)</span>
+}
 
+func UnmarshalTasks(data []byte) ([]Task, error) <span class="cov8" title="1">{
+        var tasks []Task
+        if err := json.Unmarshal(data, &amp;tasks); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+        }</span>
         <span class="cov8" title="1">return tasks, nil</span>
+}
+
+func UnmarshalTask(data []byte) (*Task, error) <span class="cov0" title="0">{
+        var task Task
+        if err := json.Unmarshal(data, &amp;task); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+        }</span>
+        <span class="cov0" title="0">return &amp;task, nil</span>
+}
+
+func validateJSONFile(filePath string) error <span class="cov8" title="1">{
+        ext := filepath.Ext(filePath)
+        if ext != ".json" </span><span class="cov8" title="1">{
+                return fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package internal
+		<pre class="file" id="file4" style="display: none">package internal
 
 import (
         "fmt"
@@ -535,8 +711,8 @@ type TaskHolder struct {
         DiskPath string
 }
 
-func NewTaskHolder() *TaskHolder <span class="cov8" title="1">{
-        return &amp;TaskHolder{DiskPath: "../resources/disk.json"}
+func NewTaskHolder(diskPath string) *TaskHolder <span class="cov8" title="1">{
+        return &amp;TaskHolder{DiskPath: diskPath}
 }</span>
 
 func (t *TaskHolder) Read() []Task <span class="cov8" title="1">{
@@ -625,7 +801,7 @@ func isValidTaskCategory(category TaskCategory) bool <span class="cov8" title="1
 }</span>
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package internal
+		<pre class="file" id="file5" style="display: none">package internal
 
 import (
         "bytes"
@@ -652,8 +828,14 @@ func ProvideTask(t *testing.T) Task <span class="cov8" title="1">{
 }</span>
 
 func ProvideTaskHolder() *TaskHolder <span class="cov0" title="0">{
-        th := NewTaskHolder()
-        th.DiskPath = "../resources/cli_disk_test.json"
+        th := NewTaskHolder("../resources/cli_disk_test.json")
+        th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+        return th
+}</span>
+
+func MockNewTaskHolder(diskPath string) *TaskHolder <span class="cov0" title="0">{
+
+        th := NewTaskHolder("../resources/cli_disk_test.json")
         th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
         return th
 }</span>
@@ -702,7 +884,7 @@ func CaptureStdin() (oldStdin *os.File, read *os.File, write *os.File) <span cla
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package internal
+		<pre class="file" id="file6" style="display: none">package internal
 
 import (
         "fmt"
@@ -747,13 +929,13 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         category = Brewing</span>
                 case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 verb = "Order"
                         }</span>
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)

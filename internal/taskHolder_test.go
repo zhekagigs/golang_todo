@@ -8,7 +8,7 @@ import (
 
 func TestNewTaskHolder(t *testing.T) {
 	t.Run("Creates a new TaskHolder", func(t *testing.T) {
-		th := NewTaskHolder()
+		th := NewTaskHolder("../resources/cli_disk_test.json")
 		if th == nil {
 			t.Errorf("Expected NewTaskHolder to return a non-nil pointer")
 		}
@@ -25,7 +25,7 @@ func TestNewTaskHolder(t *testing.T) {
 
 func TestAddTask(t *testing.T) {
 	t.Run("Add a task", func(t *testing.T) {
-		th := NewTaskHolder()
+		th := NewTaskHolder("../resources/cli_disk_test.json")
 		task := ProvideTask(t)
 		th.Add(task)
 		if len(th.Tasks) != 1 {
@@ -40,7 +40,7 @@ func TestAddTask(t *testing.T) {
 
 func TestReadTask(t *testing.T) {
 	t.Run("Read Tasks", func(t *testing.T) {
-		th := NewTaskHolder()
+		th := NewTaskHolder("../resources/cli_disk_test.json")
 		testTask := ProvideTask(t)
 		th.Add(testTask)
 		allTasks := th.Read()
@@ -54,7 +54,7 @@ func TestReadTask(t *testing.T) {
 }
 
 func TestCreateTask(t *testing.T) {
-	th := NewTaskHolder()
+	th := NewTaskHolder("../resources/cli_disk_test.json")
 	taskValue := "Test task"
 	category := TaskCategory(1)
 	fmt.Println(category)
@@ -88,7 +88,7 @@ func TestCreateTask(t *testing.T) {
 }
 
 func TestFindTaskById(t *testing.T) {
-	th := NewTaskHolder()
+	th := NewTaskHolder("../resources/cli_disk_test.json")
 	task1 := th.CreateTask("Task 1", TaskCategory(1), time.Now().Add(time.Minute))
 	th.CreateTask("Task 2", TaskCategory(1), time.Now())
 
@@ -116,7 +116,7 @@ func TestFindTaskById(t *testing.T) {
 
 func TestPartialUpdateTask(t *testing.T) {
 	setupTest := func() (*TaskHolder, *Task) {
-		th := NewTaskHolder()
+		th := NewTaskHolder("../resources/cli_disk_test.json")
 		initialTask := th.CreateTask("Initial task", TaskCategory(0), time.Now().Add(24*time.Hour))
 		return th, initialTask
 	}
@@ -279,7 +279,7 @@ func TestPartialUpdateTask(t *testing.T) {
 
 func TestDeleteTask(t *testing.T) {
 	t.Run("Delete task", func(t *testing.T) {
-		th := NewTaskHolder()
+		th := NewTaskHolder("../resources/cli_disk_test.json")
 		task1 := th.CreateTask("Task 1", TaskCategory(1), time.Now().Add(time.Minute))
 		th.CreateTask("Task 2", TaskCategory(1), time.Now())
 
@@ -298,7 +298,7 @@ func TestDeleteTask(t *testing.T) {
 	})
 
 	t.Run("Delete task with wrong id", func(t *testing.T) {
-		th := NewTaskHolder()
+		th := NewTaskHolder("../resources/cli_disk_test.json")
 		th.CreateTask("Task 1", TaskCategory(1), time.Now().Add(time.Minute))
 		th.CreateTask("Task 2", TaskCategory(1), time.Now())
 

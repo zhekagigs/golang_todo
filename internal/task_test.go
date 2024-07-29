@@ -115,7 +115,7 @@ func TestReadAndWriteJson(t *testing.T) {
 			t.Errorf("Unexpected err %v", err)
 		}
 
-		got, err := ReadFromJson("../resources/test_tasks.json")
+		got, err := ReadTasksFromJSON("../resources/test_tasks.json")
 		if err != nil {
 			t.Errorf("ReadFromJson failed!")
 		}
@@ -168,7 +168,7 @@ func TestReadAndWriteJson(t *testing.T) {
 	})
 
 	t.Run("Wrong file path  with correct suffix to read", func(t *testing.T) {
-		_, err := ReadFromJson("wrongFileName.json")
+		_, err := ReadTasksFromJSON("wrongFileName.json")
 		if err == nil {
 			t.Errorf("There must be an error")
 			return
@@ -188,7 +188,7 @@ func TestReadAndWriteJson(t *testing.T) {
 	})
 
 	t.Run("Wrong file extension to read", func(t *testing.T) {
-		_, err := ReadFromJson("wrongFileName.txt")
+		_, err := ReadTasksFromJSON("wrongFileName.txt")
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
 			return

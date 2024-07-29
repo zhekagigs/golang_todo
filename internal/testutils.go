@@ -25,8 +25,14 @@ func ProvideTask(t *testing.T) Task {
 }
 
 func ProvideTaskHolder() *TaskHolder {
-	th := NewTaskHolder()
-	th.DiskPath = "../resources/cli_disk_test.json"
+	th := NewTaskHolder("../resources/cli_disk_test.json")
+	th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+	return th
+}
+
+func MockNewTaskHolder(diskPath string) *TaskHolder {
+
+	th := NewTaskHolder("../resources/cli_disk_test.json")
 	th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
 	return th
 }

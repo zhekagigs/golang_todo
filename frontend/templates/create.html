@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Task</title>
+</head>
+<body>
+    <h1>Create New Task</h1>
+    <form action="/tasks" method="POST">
+        <div>
+            <label for="msg">Task Description:</label>
+            <input type="text" id="msg" name="msg" required>
+        </div>
+        <div>
+            <label for="category">Category:</label>
+            <select id="category" name="category">
+                <option value="0">Brewing</option>
+                <option value="1">Marketing</option>
+                <option value="2">Logistics</option>
+                <option value="3">Quality</option>
+            </select>
+        </div>
+        <div>
+            <label for="plannedAt">Planned At:</label>
+            <input type="datetime-local" id="plannedAt" name="plannedAt" required>
+        </div>
+        <button type="submit">Create Task</button>
+    </form>
+</body>
+</html>

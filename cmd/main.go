@@ -1,75 +1,55 @@
 package main
 
 import (
-	"errors"
-	"flag"
-	"fmt"
-	"github.com/zhekagigs/golang_todo/cli"
-	"github.com/zhekagigs/golang_todo/internal"
+	"log"
+	"net/http"
 	"os"
+	"time"
+
+	"github.com/zhekagigs/golang_todo/cli"
+	"github.com/zhekagigs/golang_todo/frontend"
+	"github.com/zhekagigs/golang_todo/internal"
 )
 
-func main() {
-	os.Exit(RealMain())
+type HTTPServer interface {
+	ListenAndServe(addr string, handler http.Handler) error
 }
 
-func RealMain() int {
-	taskHolder, checkExit, exitCode := InitialMain()
+type RealHTTPServer struct{}
+
+func (s *RealHTTPServer) ListenAndServe(addr string, handler http.Handler) error {
+	return http.ListenAndServe(addr, handler)
+}
+
+func main() {
+	os.Exit(RealMain(internal.NewTaskHolder, &RealHTTPServer{}, &cli.RealCLIApp{}))
+}
+
+func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server HTTPServer, cliApp cli.CLIApp) int {
+	taskHolder, checkExit, exitCode := cliApp.AppStarter(newTaskHolder)
 	if checkExit {
 		return exitCode
 	}
 
-	// runs main CLI routine
-	returnCode := cli.RunTaskManagmentCLI(taskHolder)
+	go startHTTPServer(taskHolder, server)
 
+	returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
+	time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
 	return returnCode
 }
 
-func InitialMain() (*internal.TaskHolder, bool, int) {
-	helpFlag := flag.Bool("h", false, "Help is here")
+func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) {
+	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
+		frontend.HandleTaskListRead(w, r, taskHolder)
+	})
 
-	flag.Usage = printHelp
+	http.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
+		frontend.HandleTaskListCreate(w, r, taskHolder)
+	})
 
-	flag.Parse()
-
-	if *helpFlag {
-		flag.Usage()
-		return nil, true, 0
+	log.Println("Starting server on :8080")
+	if err := server.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 
-	if flag.NArg() < 1 {
-		fmt.Println("Error: JSON file path is required")
-		flag.Usage()
-		return nil, true, 1
-	}
-
-	fileName := flag.Arg(0)
-	savedTasks, err := internal.ReadFromJson(fileName)
-	if err != nil {
-		switch {
-		case errors.Is(err, os.ErrNotExist):
-			fmt.Println("Error: Wrong file path")
-		default:
-			fmt.Printf("Error while reading json file: %v\n", err)
-		}
-		flag.Usage()
-		return nil, true, 1
-	}
-	fmt.Println(internal.BeerAscii())
-	fmt.Printf("\n>>>>>>>>>>Microbrewery Tasks Application<<<<<<<<<<<<<\n\n")
-	internal.PrintTasks(os.Stdout, savedTasks...)
-	taskHolder := internal.NewTaskHolder()
-	for _, task := range savedTasks {
-		taskHolder.Add(task)
-	}
-	return taskHolder, false, 0
-}
-
-func printHelp() {
-	fmt.Println("Usage: microbrewery-tasks [options] <json-file-path>")
-	fmt.Println("\nOptions:")
-	flag.PrintDefaults()
-	fmt.Println("\nDescription:")
-	fmt.Println("  This CLI application reads a JSON file containing microbrewery tasks and displays them.")
-	fmt.Println("  Provide the path to the JSON file as an argument.")
 }

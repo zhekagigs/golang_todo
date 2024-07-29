@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -107,20 +108,39 @@ func WriteToJson(filePath string, tasks ...Task) error {
 	return nil
 }
 
-func ReadFromJson(filePath string) ([]Task, error) {
-	if !strings.HasSuffix(filePath, ".json") {
-		return nil, fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+func ReadTasksFromJSON(filePath string) ([]Task, error) {
+	if err := validateJSONFile(filePath); err != nil {
+		return nil, err
 	}
 
-	bytes, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read a file '%s': %w", filePath, err)
+		return nil, fmt.Errorf("failed to read file '%s': %w", filePath, err)
 	}
 
+	return UnmarshalTasks(data)
+}
+
+func UnmarshalTasks(data []byte) ([]Task, error) {
 	var tasks []Task
-	if err := json.Unmarshal(bytes, &tasks); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON from file '%s': %w", filePath, err)
+	if err := json.Unmarshal(data, &tasks); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-
 	return tasks, nil
+}
+
+func UnmarshalTask(data []byte) (*Task, error) {
+	var task Task
+	if err := json.Unmarshal(data, &task); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+	return &task, nil
+}
+
+func validateJSONFile(filePath string) error {
+	ext := filepath.Ext(filePath)
+	if ext != ".json" {
+		return fmt.Errorf("invalid file extension: %s. Expected a .json file", filePath)
+	}
+	return nil
 }

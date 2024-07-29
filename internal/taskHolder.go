@@ -18,8 +18,8 @@ type TaskHolder struct {
 	DiskPath string
 }
 
-func NewTaskHolder() *TaskHolder {
-	return &TaskHolder{DiskPath: "../resources/disk.json"}
+func NewTaskHolder(diskPath string) *TaskHolder {
+	return &TaskHolder{DiskPath: diskPath}
 }
 
 func (t *TaskHolder) Read() []Task {
