@@ -60,7 +60,13 @@ func TestCreateTask(t *testing.T) {
 	fmt.Println(category)
 	plannedAt := time.Now()
 
-	task := th.CreateTask(taskValue, category, plannedAt)
+	updt := &TaskOptional{
+		nil,
+		StringPtr(taskValue),
+		CategoryPtr(category),
+		TimePtr(plannedAt),
+	}
+	task := th.CreateTask(updt)
 
 	if task.Id != 1 {
 		t.Errorf("Expected task ID to be 1, got %d", task.Id)
@@ -89,8 +95,20 @@ func TestCreateTask(t *testing.T) {
 
 func TestFindTaskById(t *testing.T) {
 	th := NewTaskHolder("resources/cli_disk_test.json")
-	task1 := th.CreateTask("Task 1", TaskCategory(1), time.Now().Add(time.Minute))
-	th.CreateTask("Task 2", TaskCategory(1), time.Now())
+	taskValue := "Test task"
+	category := TaskCategory(1)
+	fmt.Println(category)
+	plannedAt := time.Now()
+
+	updt := &TaskOptional{
+		nil,
+		StringPtr(taskValue),
+		CategoryPtr(category),
+		TimePtr(plannedAt),
+	}
+	task1 := th.CreateTask(updt)
+	updt.Msg = StringPtr("Task 2")
+	th.CreateTask(updt)
 
 	t.Run("Find existing task", func(t *testing.T) {
 		foundTask, err := th.FindTaskById(task1.Id)
@@ -117,7 +135,20 @@ func TestFindTaskById(t *testing.T) {
 func TestPartialUpdateTask(t *testing.T) {
 	setupTest := func() (*TaskHolder, *Task) {
 		th := NewTaskHolder("resources/cli_disk_test.json")
-		initialTask := th.CreateTask("Initial task", TaskCategory(0), time.Now().Add(24*time.Hour))
+
+		taskValue := "Initial task"
+		category := TaskCategory(0)
+		fmt.Println(category)
+		plannedAt := time.Now()
+
+		updt := &TaskOptional{
+			nil,
+			StringPtr(taskValue),
+			CategoryPtr(category),
+			TimePtr(plannedAt),
+		}
+		initialTask := th.CreateTask(updt)
+
 		return th, initialTask
 	}
 
@@ -127,7 +158,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		done := true
 
 		// do update
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{Done: &done})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{Done: &done})
 
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
@@ -147,7 +178,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		newMsg := "Updated task message"
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{Msg: &newMsg})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{Msg: &newMsg})
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
@@ -163,7 +194,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		emptyMsg := ""
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{Msg: &emptyMsg})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{Msg: &emptyMsg})
 		if _, ok := err.(*EmptyTaskValueError); !ok {
 			t.Errorf("Expected EmptyTaskValueError, got %v", err)
 		}
@@ -177,7 +208,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		newCategory := TaskCategory(2)
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{Category: &newCategory})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{Category: &newCategory})
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
@@ -193,7 +224,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		invalidCategory := TaskCategory(999)
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{Category: &invalidCategory})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{Category: &invalidCategory})
 		if _, ok := err.(*InvalidCategoryError); !ok {
 			t.Errorf("Expected InvalidCategoryError, got %v", err)
 		}
@@ -206,7 +237,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		newPlannedAt := time.Now().Add(48 * time.Hour)
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{PlannedAt: &newPlannedAt})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{PlannedAt: &newPlannedAt})
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
@@ -222,7 +253,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		pastTime := time.Now().Add(-24 * time.Hour)
-		err := th.PartialUpdateTask(initialTask.Id, TaskUpdate{PlannedAt: &pastTime})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{PlannedAt: &pastTime})
 		if _, ok := err.(*PastPlannedTimeError); !ok {
 			t.Errorf("Expected PastPlannedTimeError, got %v", err)
 		}
@@ -232,7 +263,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, _ := setupTest()
 
 		nonExistentId := 999
-		err := th.PartialUpdateTask(nonExistentId, TaskUpdate{})
+		err := th.PartialUpdateTask(nonExistentId, &TaskOptional{})
 		if err != ErrNotFound {
 			t.Errorf("Expected ErrNotFound, got %v", err)
 		}
@@ -246,7 +277,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		newCategory := TaskCategory(3)
 		newPlannedAt := time.Now().Add(72 * time.Hour)
 
-		update := TaskUpdate{
+		update := &TaskOptional{
 			Done:      &newDone,
 			Msg:       &newMsg,
 			Category:  &newCategory,
@@ -279,32 +310,38 @@ func TestPartialUpdateTask(t *testing.T) {
 
 func TestDeleteTask(t *testing.T) {
 	t.Run("Delete task", func(t *testing.T) {
-		th := NewTaskHolder("resources/cli_disk_test.json")
-		task1 := th.CreateTask("Task 1", TaskCategory(1), time.Now().Add(time.Minute))
-		th.CreateTask("Task 2", TaskCategory(1), time.Now())
+		th := NewTaskHolder("resources/test_tasks.json")
+		update := TaskOptional{
+			Msg:       StringPtr("Task 1"),
+			Category:  CategoryPtr(TaskCategory(1)),
+			PlannedAt: TimePtr(time.Now().Add(time.Minute)),
+		}
+		task1 := th.CreateTask(&update)
+		th.CreateTask(&TaskOptional{Msg: StringPtr("Task 2"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now())})
 
 		err := th.DeleteTask(task1.Id)
 		if err != nil {
-			t.Errorf("Unexpected error ocuured")
+			t.Fatalf("Unexpected error occurred: %v", err)
 		}
 
-		if len(th.Tasks) != 1 {
-			t.Errorf("got 1 want %d", len(th.Tasks))
+		tasks := th.Read()
+		if len(tasks) != 1 {
+			t.Errorf("Expected 1 task, got %d", len(tasks))
 		}
 
-		if th.Read()[0].Msg != "Task 2" {
-			t.Errorf("Expected task msg %q, but gor %q", "Task2", th.Read()[0].Msg)
+		if tasks[0].Msg != "Task 2" {
+			t.Errorf("Expected task msg %q, but got %q", "Task 2", tasks[0].Msg)
 		}
 	})
 
 	t.Run("Delete task with wrong id", func(t *testing.T) {
-		th := NewTaskHolder("resources/cli_disk_test.json")
-		th.CreateTask("Task 1", TaskCategory(1), time.Now().Add(time.Minute))
-		th.CreateTask("Task 2", TaskCategory(1), time.Now())
+		th := NewTaskHolder("resources/test_tasks.json")
+		th.CreateTask(&TaskOptional{Msg: StringPtr("Task 1"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now().Add(time.Minute))})
+		th.CreateTask(&TaskOptional{Msg: StringPtr("Task 2"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now())})
 
 		err := th.DeleteTask(9999)
 		if err == nil {
-			t.Errorf("Expected error, got nil")
+			t.Error("Expected error, got nil")
 		}
 	})
 }

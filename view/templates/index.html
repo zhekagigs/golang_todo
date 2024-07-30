@@ -17,6 +17,7 @@
         .logistics { color: #fb8c00; }
         .quality { color: #e53935; }
         .delete-btn { background-color: #e53935; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        .update-btn { background-color: #af149f; color: white; border: none; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -51,6 +52,9 @@
                         <td>
                             <button class="delete-btn" onclick="deleteTask({{.Id}})">Delete</button>
                         </td>
+                        <td>
+                            <button class="update-btn" onclick="updateTask({{.Id}})">Update</button>
+                        </td>
                     </tr>
                 {{end}}
             </tbody>
@@ -75,6 +79,21 @@
                     });
             }
         }
+
+        function updateTask(taskId) {
+            fetch(`/tasks?id=${taskId}`, {method: 'PATCH'})
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update the task');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occured while deleting the task');
+                });
+            }
         </script>
 </body>
 </html>

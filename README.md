@@ -14,6 +14,9 @@ To build run `make build`.
 
 Check `makefile` for other commands.
 
+App runs similtuneosly as CLI and Web interfaces.
+
+
 # Code Structure.
 
 Main object is `Task` which gets aggregated into `TasksHolder` with CRUD operations available.  
@@ -21,3 +24,8 @@ CLI is responsible for interactive mode.
 Few packages in a project - internals most of the logic around tasks plus cli, frontend and rest interafaces.
 Using `html/templates` to serve front-end on base of standart `net/http` server.
 Using `embed` package to integrate asset files in a binary, which creates internal read-only file system.
+
+# Test
+Run `make all` to test with coverage and then `open coverage.html` to see visually appealing report.
+I had a git hook in pre-commit for `.git` that runs command each commit, which will contain latest test coverage report.
+Aiming for ±80 percentage coverage, happy path and few error handlings.

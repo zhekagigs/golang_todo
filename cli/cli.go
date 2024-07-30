@@ -202,7 +202,6 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 	msg = strings.TrimSpace(msg)
 
 	// Update task status
-	var done bool
 	var donePtr *bool
 	fmt.Print("Update task status? (y/n): ")
 	updateStatus, _ := reader.ReadString('\n')
@@ -211,8 +210,7 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 		doneStr, _ := reader.ReadString('\n')
 		doneStr = strings.TrimSpace(doneStr)
 		if parsedDone, err := strconv.ParseBool(doneStr); err == nil {
-			done = parsedDone
-			donePtr = &done
+			donePtr = &parsedDone
 		} else {
 			return err
 		}
@@ -240,7 +238,6 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 	}
 
 	// Update planned time
-	var plannedAt time.Time
 	var plannedAtPtr *time.Time
 	fmt.Print("Update planned time? (y/n): ")
 	updatePlannedTime, _ := reader.ReadString('\n')
@@ -248,14 +245,13 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 		fmt.Print("Enter new planned time (YYYY-MM-DD HH:MM): ")
 		timeStr, _ := reader.ReadString('\n')
 		if parsedTime, err := time.Parse(in.TASK_TIME_FORMAT, strings.TrimSpace(timeStr)); err == nil {
-			plannedAt = parsedTime
-			plannedAtPtr = &plannedAt
+			plannedAtPtr = &parsedTime
 		} else {
 			return err
 		}
 	}
 
-	update := in.TaskUpdate{
+	update := &in.TaskOptional{
 		Done:      donePtr,
 		Msg:       in.StringPtr(msg),
 		Category:  categoryPtr,
@@ -302,7 +298,14 @@ func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error {
 	if err == nil {
 		plannedParsedAt = parsedTime
 	}
-	taskHolder.CreateTask(taskValue, in.TaskCategory(categoryNum), plannedParsedAt)
+	updt := &in.TaskOptional{
+		Done:      nil,
+		Msg:       in.StringPtr(taskValue),
+		Category:  in.CategoryPtr(in.TaskCategory(categoryNum)),
+		PlannedAt: in.TimePtr(plannedParsedAt),
+	}
+
+	taskHolder.CreateTask(updt)
 	return nil
 }
 

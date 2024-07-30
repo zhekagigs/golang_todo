@@ -27,15 +27,31 @@ func TestReadTasks(t *testing.T) {
 		{
 			name: "Single task",
 			setupTasks: func(th *in.TaskHolder) {
-				th.CreateTask("Test task 1", in.Brewing, in.MockTime)
+				updt := &in.TaskOptional{
+					Done:      nil,
+					Msg:       in.StringPtr("Test task 1"),
+					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
+					PlannedAt: in.TimePtr(in.MockTime),
+				}
+				th.CreateTask(updt)
 			},
 			expected: "\nList of tasks:\n\nid:1,[Brewing] Test task 1",
 		},
 		{
 			name: "Multiple tasks",
 			setupTasks: func(th *in.TaskHolder) {
-				th.CreateTask("Task 1", in.Brewing, in.MockTime)
-				th.CreateTask("Task 2", in.Marketing, in.MockTime)
+				th.CreateTask(&in.TaskOptional{
+					Done:      nil,
+					Msg:       in.StringPtr("Task 1"),
+					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
+					PlannedAt: in.TimePtr(in.MockTime),
+				})
+				th.CreateTask(&in.TaskOptional{
+					Done:      nil,
+					Msg:       in.StringPtr("Test task 2"),
+					Category:  in.CategoryPtr(in.TaskCategory(in.Marketing)),
+					PlannedAt: in.TimePtr(in.MockTime),
+				})
 			},
 			expected: "\nList of tasks:\n\nid:1,[Brewing] Task 1",
 		},
@@ -124,9 +140,24 @@ func TestCreateCLITask(t *testing.T) {
 func TestDeleteCLITask(t *testing.T) {
 	setupTaskHolder := func() *in.TaskHolder {
 		th := in.NewTaskHolder("..internal/resources/cli_disk_test.json")
-		th.CreateTask("in.Task 1", in.Brewing, time.Now().Add(24*time.Hour))
-		th.CreateTask("in.Task 2", in.Marketing, time.Now().Add(48*time.Hour))
-		th.CreateTask("in.Task 3", in.Logistics, time.Now().Add(72*time.Hour))
+		th.CreateTask(&in.TaskOptional{
+			Done:      nil,
+			Msg:       in.StringPtr("Test task 1"),
+			Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
+			PlannedAt: in.TimePtr(in.MockTime),
+		})
+		th.CreateTask(&in.TaskOptional{
+			Done:      nil,
+			Msg:       in.StringPtr("Test task 2"),
+			Category:  in.CategoryPtr(in.TaskCategory(in.Marketing)),
+			PlannedAt: in.TimePtr(in.MockTime),
+		})
+		th.CreateTask(&in.TaskOptional{
+			Done:      nil,
+			Msg:       in.StringPtr("Test task 3"),
+			Category:  in.CategoryPtr(in.TaskCategory(in.Logistics)),
+			PlannedAt: in.TimePtr(in.MockTime),
+		})
 		return th
 	}
 
@@ -242,34 +273,6 @@ func TestUpdateTask(t *testing.T) {
 				}
 			},
 		},
-		// {
-		// 	name:   "Invalid task ID",
-		// 	taskId: 999,
-		// 	input:  "\nn\nn\nn\n",
-		// 	expectedOutput: "Error updating task:",
-		// 	expectedError:  true,
-		// },
-		// {
-		// 	name:   "Invalid boolean input",
-		// 	taskId: 1,
-		// 	input:  "\ny\ninvalid\n",
-		// 	expectedOutput: "Error updating task:",
-		// 	expectedError:  true,
-		// },
-		// {
-		// 	name:   "Invalid category input",
-		// 	taskId: 1,
-		// 	input:  "\nn\ny\n5\n",
-		// 	expectedOutput: "Error updating task:",
-		// 	expectedError:  true,
-		// },
-		// {
-		// 	name:   "Invalid date input",
-		// 	taskId: 1,
-		// 	input:  "\nn\nn\ny\ninvalid date\n",
-		// 	expectedOutput: "Error updating task:",
-		// 	expectedError:  true,
-		// },
 	}
 
 	for _, tt := range tests {
@@ -384,7 +387,12 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:    UPDATE,
 			taskId: 1,
 			setup: func(th *in.TaskHolder) {
-				th.CreateTask("Initial Task", in.Brewing, time.Now().Add(24*time.Hour))
+				th.CreateTask(&in.TaskOptional{
+					Done:      nil,
+					Msg:       in.StringPtr("Update task 1"),
+					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
+					PlannedAt: in.TimePtr(in.MockTime),
+				})
 			},
 			input:      "Updated Task\ny\ntrue\nn\nn\n",
 			expectExit: -1,
@@ -394,7 +402,12 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:    DELETE,
 			taskId: 1,
 			setup: func(th *in.TaskHolder) {
-				th.CreateTask("Task to Delete", in.Brewing, time.Now().Add(24*time.Hour))
+				th.CreateTask(&in.TaskOptional{
+					Done:      nil,
+					Msg:       in.StringPtr("Task to delete"),
+					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
+					PlannedAt: in.TimePtr(in.MockTime),
+				})
 			},
 			expectExit: -1,
 		},
@@ -427,7 +440,7 @@ func TestExecuteCommand(t *testing.T) {
 }
 
 func TestRunCLI(t *testing.T) {
-	taskHolder := in.ProvideTaskHolderPath("../internal/resources/cli_disk_test.json")
+	taskHolder := in.ProvideTaskHolderWithPath("../internal/resources/cli_disk_test.json")
 
 	oldstd, read, write := in.CaptureStdout()
 	oldstdIn, inRead, inWrite := in.CaptureStdin()

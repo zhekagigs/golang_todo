@@ -5,7 +5,8 @@ import (
 	"time"
 )
 
-type TaskUpdate struct {
+// Pointers for optional fields
+type TaskOptional struct {
 	Done      *bool
 	Msg       *string
 	Category  *TaskCategory
@@ -35,9 +36,9 @@ func (t *TaskHolder) Add(task Task) {
 
 }
 
-func (t *TaskHolder) CreateTask(taskValue string, category TaskCategory, plannedAt time.Time) *Task {
+func (t *TaskHolder) CreateTask(update *TaskOptional) *Task {
 	t.latestId++
-	task := NewTask(t.latestId, taskValue, category, plannedAt)
+	task := NewTask(t.latestId, *update.Msg, *update.Category, *update.PlannedAt)
 	t.Tasks = append(t.Tasks, task)
 	return &task
 }
@@ -51,7 +52,7 @@ func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) {
 	return nil, ErrNotFound
 }
 
-func (t *TaskHolder) PartialUpdateTask(taskId int, update TaskUpdate) error {
+func (t *TaskHolder) PartialUpdateTask(taskId int, update *TaskOptional) error {
 	task, err := t.FindTaskById(taskId)
 	if err != nil {
 		return err

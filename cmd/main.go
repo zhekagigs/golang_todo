@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/zhekagigs/golang_todo/cli"
-	"github.com/zhekagigs/golang_todo/frontend"
 	"github.com/zhekagigs/golang_todo/internal"
+	"github.com/zhekagigs/golang_todo/view"
 )
 
 type HTTPServer interface {
@@ -41,15 +41,18 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server H
 func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) {
 	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
-			frontend.HandleTaskDelete(w, r, taskHolder)
+			view.HandleTaskDelete(w, r, taskHolder)
+		} else if r.Method == http.MethodPatch {
+			view.HandleTaskUpdate(w, r, taskHolder)
 		} else {
-			frontend.HandleTaskListRead(w, r, taskHolder)
+
+			view.HandleTaskListRead(w, r, taskHolder)
 		}
 	})
 
 	http.HandleFunc("/tasks/create", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("handling create")
-		frontend.HandleTaskListCreate(w, r, taskHolder)
+		view.HandleTaskListCreate(w, r, taskHolder)
 	})
 
 	log.Println("Starting server on :8080")

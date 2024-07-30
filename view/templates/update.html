@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Task Form</title>
+</head>
+<body>
+    <h1>Update Task Form</h1>
+    <form action="" method="post" id="update-task-form">
+        <label for="title">Task:</label>
+        <input type="text" name="title" placeholder={{.Task.Msg}} required><br><br>
+
+        <label for="done">Done:</label>
+        <textarea name="done" placeholder={{.Task.Done}}></textarea><br><br>
+
+        <label for="due-date">Due Date:</label>
+        <input type="date" name="due_date" required><br><br>
+
+        <button type="submit">Update Task</button>
+    </form>
+</body>
+</html>

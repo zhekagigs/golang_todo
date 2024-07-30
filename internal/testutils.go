@@ -26,19 +26,37 @@ func ProvideTask(t *testing.T) Task {
 
 func ProvideTaskHolder() *TaskHolder {
 	th := NewTaskHolder("resources/cli_disk_test.json")
-	th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+	updt := &TaskOptional{
+		nil,
+		StringPtr("Initial Task"),
+		CategoryPtr(Brewing),
+		TimePtr(time.Now().Add(24 * time.Hour)),
+	}
+	th.CreateTask(updt)
 	return th
 }
 
-func ProvideTaskHolderPath(path string) *TaskHolder {
+func ProvideTaskHolderWithPath(path string) *TaskHolder {
 	th := NewTaskHolder(path)
-	th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+	updt := &TaskOptional{
+		nil,
+		StringPtr("Initial Task"),
+		CategoryPtr(Brewing),
+		TimePtr(time.Now().Add(24 * time.Hour)),
+	}
+	th.CreateTask(updt)
 	return th
 }
 func MockNewTaskHolder(diskPath string) *TaskHolder {
 
 	th := NewTaskHolder("resources/cli_disk_test.json")
-	th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+	updt := &TaskOptional{
+		nil,
+		StringPtr("Initial Task"),
+		CategoryPtr(Brewing),
+		TimePtr(time.Now().Add(24 * time.Hour)),
+	}
+	th.CreateTask(updt)
 	return th
 }
 

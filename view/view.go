@@ -1,7 +1,8 @@
-package frontend
+package view
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -82,21 +83,15 @@ func HandleTaskListCreate(w http.ResponseWriter, r *http.Request, th *in.TaskHol
 			return
 		}
 
-		// Extract form values
-		msg := r.FormValue("msg")
-		category, err := strconv.Atoi(r.FormValue("category"))
+		update, err := ExtractFormValues(r)
+
 		if err != nil {
 			http.Error(w, "Invalid category", http.StatusBadRequest)
 			return
 		}
-		plannedAt, err := time.Parse("2006-01-02T15:04", r.FormValue("plannedAt"))
-		if err != nil {
-			http.Error(w, "Invalid planned time", http.StatusBadRequest)
-			return
-		}
 
 		// Create the task
-		task := th.CreateTask(msg, in.TaskCategory(category), plannedAt)
+		task := th.CreateTask(update)
 		if task == nil {
 			http.Error(w, "Failed to create task", http.StatusInternalServerError)
 			return
@@ -111,6 +106,75 @@ func HandleTaskListCreate(w http.ResponseWriter, r *http.Request, th *in.TaskHol
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
+type FormAdapter struct {
+}
+
+func ExtractFormValues(r *http.Request) (*in.TaskOptional, error) {
+	msg := r.FormValue("msg")
+	var errs []error
+
+	addErr := func(err error, msg string) {
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", msg, err))
+		}
+	}
+
+	checkErr := func(err error, msg string) {
+		if err != nil {
+			addErr(err, msg)
+		}
+	}
+
+	category, err := strconv.Atoi(r.FormValue("category"))
+	checkErr(err, "Invalid category")
+
+	plannedAt, err := time.Parse("2006-01-02T15:04", r.FormValue("plannedAt"))
+	checkErr(err, "invalid planned time")
+
+	done, err := strconv.ParseBool(r.FormValue("done"))
+	checkErr(err, "invalid done value")
+
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("form value errors: %v", errs)
+	}
+
+	update := &in.TaskOptional{
+		Done:      &done,
+		Msg:       in.StringPtr(msg),
+		Category:  (*in.TaskCategory)(&category),
+		PlannedAt: &plannedAt,
+	}
+
+	return update, nil
+}
+
+func HandleTaskUpdate(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	taskIDStr := r.URL.Query().Get("id")
+	if taskIDStr == "" {
+		http.Error(w, "Missing Task Id", http.StatusBadRequest)
+		return
+	}
+	taskID, err := strconv.Atoi(taskIDStr)
+	if err != nil {
+		http.Error(w, "Invalid Task ID", http.StatusBadRequest)
+		return
+	}
+
+	update, err := ExtractFormValues(r)
+	if err != nil {
+		http.Error(w, "Error processing form values", http.StatusBadRequest)
+	}
+
+	err = th.PartialUpdateTask(taskID, update)
+	if err != nil {
+		http.Error(w, "Error updating task", http.StatusInternalServerError)
+	}
+
+}
 func HandleTaskDelete(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

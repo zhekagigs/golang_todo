@@ -55,19 +55,19 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (90.4%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (90.2%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (52.6%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (47.6%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/frontend/frontend.go (17.6%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/internal/task.go (74.3%)</option>
 				
-				<option value="file3">github.com/zhekagigs/golang_todo/internal/task.go (74.3%)</option>
+				<option value="file3">github.com/zhekagigs/golang_todo/internal/taskHolder.go (97.6%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/internal/taskHolder.go (97.6%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/internal/testutils.go (15.8%)</option>
 				
-				<option value="file5">github.com/zhekagigs/golang_todo/internal/testutils.go (17.1%)</option>
+				<option value="file5">github.com/zhekagigs/golang_todo/internal/utils.go (92.2%)</option>
 				
-				<option value="file6">github.com/zhekagigs/golang_todo/internal/utils.go (85.7%)</option>
+				<option value="file6">github.com/zhekagigs/golang_todo/view/view.go (12.2%)</option>
 				
 				</select>
 			</div>
@@ -285,7 +285,6 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
         msg = strings.TrimSpace(msg)
 
         // Update task status
-        var done bool
         var donePtr *bool
         fmt.Print("Update task status? (y/n): ")
         updateStatus, _ := reader.ReadString('\n')
@@ -294,8 +293,7 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
                 doneStr, _ := reader.ReadString('\n')
                 doneStr = strings.TrimSpace(doneStr)
                 if parsedDone, err := strconv.ParseBool(doneStr); err == nil </span><span class="cov8" title="1">{
-                        done = parsedDone
-                        donePtr = &amp;done
+                        donePtr = &amp;parsedDone
                 }</span> else<span class="cov0" title="0"> {
                         return err
                 }</span>
@@ -323,22 +321,20 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
         }
 
         // Update planned time
-        <span class="cov8" title="1">var plannedAt time.Time
-        var plannedAtPtr *time.Time
+        <span class="cov8" title="1">var plannedAtPtr *time.Time
         fmt.Print("Update planned time? (y/n): ")
         updatePlannedTime, _ := reader.ReadString('\n')
         if strings.ToLower(strings.TrimSpace(updatePlannedTime)) == "y" </span><span class="cov8" title="1">{
                 fmt.Print("Enter new planned time (YYYY-MM-DD HH:MM): ")
                 timeStr, _ := reader.ReadString('\n')
                 if parsedTime, err := time.Parse(in.TASK_TIME_FORMAT, strings.TrimSpace(timeStr)); err == nil </span><span class="cov8" title="1">{
-                        plannedAt = parsedTime
-                        plannedAtPtr = &amp;plannedAt
+                        plannedAtPtr = &amp;parsedTime
                 }</span> else<span class="cov0" title="0"> {
                         return err
                 }</span>
         }
 
-        <span class="cov8" title="1">update := in.TaskUpdate{
+        <span class="cov8" title="1">update := &amp;in.TaskOptional{
                 Done:      donePtr,
                 Msg:       in.StringPtr(msg),
                 Category:  categoryPtr,
@@ -385,7 +381,14 @@ func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error <span cla
         if err == nil </span><span class="cov8" title="1">{
                 plannedParsedAt = parsedTime
         }</span>
-        <span class="cov8" title="1">taskHolder.CreateTask(taskValue, in.TaskCategory(categoryNum), plannedParsedAt)
+        <span class="cov8" title="1">updt := &amp;in.TaskOptional{
+                Done:      nil,
+                Msg:       in.StringPtr(taskValue),
+                Category:  in.CategoryPtr(in.TaskCategory(categoryNum)),
+                PlannedAt: in.TimePtr(plannedParsedAt),
+        }
+
+        taskHolder.CreateTask(updt)
         return nil</span>
 }
 
@@ -410,8 +413,8 @@ import (
         "time"
 
         "github.com/zhekagigs/golang_todo/cli"
-        "github.com/zhekagigs/golang_todo/frontend"
         "github.com/zhekagigs/golang_todo/internal"
+        "github.com/zhekagigs/golang_todo/view"
 )
 
 type HTTPServer interface {
@@ -444,15 +447,18 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server H
 func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) <span class="cov8" title="1">{
         http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
                 if r.Method == http.MethodDelete </span><span class="cov0" title="0">{
-                        frontend.HandleTaskDelete(w, r, taskHolder)
+                        view.HandleTaskDelete(w, r, taskHolder)
+                }</span> else<span class="cov0" title="0"> if r.Method == http.MethodPatch </span><span class="cov0" title="0">{
+                        view.HandleTaskUpdate(w, r, taskHolder)
                 }</span> else<span class="cov0" title="0"> {
-                        frontend.HandleTaskListRead(w, r, taskHolder)
+
+                        view.HandleTaskListRead(w, r, taskHolder)
                 }</span>
         })
 
         <span class="cov8" title="1">http.HandleFunc("/tasks/create", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
                 log.Println("handling create")
-                frontend.HandleTaskListCreate(w, r, taskHolder)
+                view.HandleTaskListCreate(w, r, taskHolder)
         }</span>)
 
         <span class="cov8" title="1">log.Println("Starting server on :8080")
@@ -463,155 +469,7 @@ func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) <span c
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package frontend
-
-import (
-        "embed"
-        "html/template"
-        "log"
-        "net/http"
-        "strconv"
-        "strings"
-        "time"
-
-        in "github.com/zhekagigs/golang_todo/internal"
-)
-
-//go:embed templates/*.html
-var templateFiles embed.FS
-
-type TemplateData struct {
-        Tasks []in.Task
-}
-
-func generateTemplate(name string) (*template.Template, error) <span class="cov8" title="1">{
-        funcMap := template.FuncMap{
-                "formatDate": func(t time.Time) string </span><span class="cov8" title="1">{
-                        return t.Format("Jan 02, 2006 15:04")
-                }</span>,
-                "toLowerCase": strings.ToLower,
-        }
-
-        <span class="cov8" title="1">tmpl, err := template.New(name).Funcs(funcMap).ParseFS(templateFiles, "templates/*.html")
-        if err != nil </span><span class="cov0" title="0">{
-                return nil, err
-        }</span>
-
-        <span class="cov8" title="1">return tmpl, nil</span>
-}
-
-func HandleTaskListRead(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov8" title="1">{
-        log.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
-        tmpl, err := generateTemplate("index.html")
-        if err != nil </span><span class="cov0" title="0">{
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-        }</span>
-
-        <span class="cov8" title="1">tasks := th.Read()
-
-        data := TemplateData{
-                Tasks: tasks,
-        }
-
-        err = tmpl.ExecuteTemplate(w, "index.html", data)
-        if err != nil </span><span class="cov0" title="0">{
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-        }</span>
-}
-func HandleTaskListCreate(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov0" title="0">{
-        log.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
-        if r.Method == http.MethodGet </span><span class="cov0" title="0">{
-                // Render the create form
-                tmpl, err := generateTemplate("create.html")
-                if err != nil </span><span class="cov0" title="0">{
-                        http.Error(w, err.Error(), http.StatusInternalServerError)
-                        return
-                }</span>
-
-                <span class="cov0" title="0">err = tmpl.ExecuteTemplate(w, "create.html", nil)
-                if err != nil </span><span class="cov0" title="0">{
-                        http.Error(w, err.Error(), http.StatusInternalServerError)
-                        return
-                }</span>
-                <span class="cov0" title="0">return</span>
-        }
-
-        <span class="cov0" title="0">if r.Method == http.MethodPost </span><span class="cov0" title="0">{
-                log.Println("Post method call")
-                // Parse the form data
-                err := r.ParseForm()
-                if err != nil </span><span class="cov0" title="0">{
-                        http.Error(w, err.Error(), http.StatusBadRequest)
-                        return
-                }</span>
-
-                // Extract form values
-                <span class="cov0" title="0">msg := r.FormValue("msg")
-                category, err := strconv.Atoi(r.FormValue("category"))
-                if err != nil </span><span class="cov0" title="0">{
-                        http.Error(w, "Invalid category", http.StatusBadRequest)
-                        return
-                }</span>
-                <span class="cov0" title="0">plannedAt, err := time.Parse("2006-01-02T15:04", r.FormValue("plannedAt"))
-                if err != nil </span><span class="cov0" title="0">{
-                        http.Error(w, "Invalid planned time", http.StatusBadRequest)
-                        return
-                }</span>
-
-                // Create the task
-                <span class="cov0" title="0">task := th.CreateTask(msg, in.TaskCategory(category), plannedAt)
-                if task == nil </span><span class="cov0" title="0">{
-                        http.Error(w, "Failed to create task", http.StatusInternalServerError)
-                        return
-                }</span>
-
-                // Redirect to the task list page
-                <span class="cov0" title="0">http.Redirect(w, r, "/tasks", http.StatusSeeOther)
-                return</span>
-        }
-
-        // If neither GET nor POST, return method not allowed
-        <span class="cov0" title="0">http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)</span>
-}
-
-func HandleTaskDelete(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov0" title="0">{
-        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
-                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-                return
-        }</span>
-
-        // Extract the task ID from the query parameter
-        <span class="cov0" title="0">taskIDStr := r.URL.Query().Get("id")
-        if taskIDStr == "" </span><span class="cov0" title="0">{
-                http.Error(w, "Missing task ID", http.StatusBadRequest)
-                return
-        }</span>
-
-        <span class="cov0" title="0">taskID, err := strconv.Atoi(taskIDStr)
-        if err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Invalid task ID", http.StatusBadRequest)
-                return
-        }</span>
-
-        // Delete the task
-        <span class="cov0" title="0">err = th.DeleteTask(taskID)
-        if err != nil </span><span class="cov0" title="0">{
-                if err == in.ErrNotFound </span><span class="cov0" title="0">{
-                        http.Error(w, "Task not found", http.StatusNotFound)
-                }</span> else<span class="cov0" title="0"> {
-                        http.Error(w, "Internal server error", http.StatusInternalServerError)
-                }</span>
-                <span class="cov0" title="0">return</span>
-        }
-
-        // Respond with a success status
-        <span class="cov0" title="0">w.WriteHeader(http.StatusOK)</span>
-}
-</pre>
-		
-		<pre class="file" id="file3" style="display: none">package internal
+		<pre class="file" id="file2" style="display: none">package internal
 
 import (
         "encoding/json"
@@ -759,14 +617,15 @@ func validateJSONFile(filePath string) error <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package internal
+		<pre class="file" id="file3" style="display: none">package internal
 
 import (
         "fmt"
         "time"
 )
 
-type TaskUpdate struct {
+// Pointers for optional fields
+type TaskOptional struct {
         Done      *bool
         Msg       *string
         Category  *TaskCategory
@@ -796,9 +655,9 @@ func (t *TaskHolder) Add(task Task) <span class="cov8" title="1">{
 
 }
 
-func (t *TaskHolder) CreateTask(taskValue string, category TaskCategory, plannedAt time.Time) *Task <span class="cov8" title="1">{
+func (t *TaskHolder) CreateTask(update *TaskOptional) *Task <span class="cov8" title="1">{
         t.latestId++
-        task := NewTask(t.latestId, taskValue, category, plannedAt)
+        task := NewTask(t.latestId, *update.Msg, *update.Category, *update.PlannedAt)
         t.Tasks = append(t.Tasks, task)
         return &amp;task
 }</span>
@@ -812,7 +671,7 @@ func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) <span class="cov8" 
         <span class="cov8" title="1">return nil, ErrNotFound</span>
 }
 
-func (t *TaskHolder) PartialUpdateTask(taskId int, update TaskUpdate) error <span class="cov8" title="1">{
+func (t *TaskHolder) PartialUpdateTask(taskId int, update *TaskOptional) error <span class="cov8" title="1">{
         task, err := t.FindTaskById(taskId)
         if err != nil </span><span class="cov8" title="1">{
                 return err
@@ -869,7 +728,7 @@ func isValidTaskCategory(category TaskCategory) bool <span class="cov8" title="1
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package internal
+		<pre class="file" id="file4" style="display: none">package internal
 
 import (
         "bytes"
@@ -897,19 +756,37 @@ func ProvideTask(t *testing.T) Task <span class="cov8" title="1">{
 
 func ProvideTaskHolder() *TaskHolder <span class="cov0" title="0">{
         th := NewTaskHolder("resources/cli_disk_test.json")
-        th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+        updt := &amp;TaskOptional{
+                nil,
+                StringPtr("Initial Task"),
+                CategoryPtr(Brewing),
+                TimePtr(time.Now().Add(24 * time.Hour)),
+        }
+        th.CreateTask(updt)
         return th
 }</span>
 
-func ProvideTaskHolderPath(path string) *TaskHolder <span class="cov0" title="0">{
+func ProvideTaskHolderWithPath(path string) *TaskHolder <span class="cov0" title="0">{
         th := NewTaskHolder(path)
-        th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+        updt := &amp;TaskOptional{
+                nil,
+                StringPtr("Initial Task"),
+                CategoryPtr(Brewing),
+                TimePtr(time.Now().Add(24 * time.Hour)),
+        }
+        th.CreateTask(updt)
         return th
 }</span>
 func MockNewTaskHolder(diskPath string) *TaskHolder <span class="cov0" title="0">{
 
         th := NewTaskHolder("resources/cli_disk_test.json")
-        th.CreateTask("Initial Task", Brewing, time.Now().Add(24*time.Hour))
+        updt := &amp;TaskOptional{
+                nil,
+                StringPtr("Initial Task"),
+                CategoryPtr(Brewing),
+                TimePtr(time.Now().Add(24 * time.Hour)),
+        }
+        th.CreateTask(updt)
         return th
 }</span>
 
@@ -957,7 +834,7 @@ func CaptureStdin() (oldStdin *os.File, read *os.File, write *os.File) <span cla
 }</span>
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package internal
+		<pre class="file" id="file5" style="display: none">package internal
 
 import (
         "embed"
@@ -1006,7 +883,7 @@ func generateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         category = Brewing</span>
                 case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 verb = "Order"
                         }</span>
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
@@ -1044,11 +921,231 @@ func BeerAscii() string <span class="cov8" title="1">{
         <span class="cov8" title="1">return string(data)</span>
 }
 
-func StringPtr(s string) *string <span class="cov0" title="0">{
+func StringPtr(s string) *string <span class="cov8" title="1">{
         if s == "" </span><span class="cov0" title="0">{
                 return nil
         }</span>
-        <span class="cov0" title="0">return &amp;s</span>
+        <span class="cov8" title="1">return &amp;s</span>
+}
+
+func CategoryPtr(c TaskCategory) *TaskCategory <span class="cov8" title="1">{
+        return &amp;c
+}</span>
+
+func TimePtr(t time.Time) *time.Time <span class="cov8" title="1">{
+        return &amp;t
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package view
+
+import (
+        "embed"
+        "fmt"
+        "html/template"
+        "log"
+        "net/http"
+        "strconv"
+        "strings"
+        "time"
+
+        in "github.com/zhekagigs/golang_todo/internal"
+)
+
+//go:embed templates/*.html
+var templateFiles embed.FS
+
+type TemplateData struct {
+        Tasks []in.Task
+}
+
+func generateTemplate(name string) (*template.Template, error) <span class="cov8" title="1">{
+        funcMap := template.FuncMap{
+                "formatDate": func(t time.Time) string </span><span class="cov8" title="1">{
+                        return t.Format("Jan 02, 2006 15:04")
+                }</span>,
+                "toLowerCase": strings.ToLower,
+        }
+
+        <span class="cov8" title="1">tmpl, err := template.New(name).Funcs(funcMap).ParseFS(templateFiles, "templates/*.html")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return tmpl, nil</span>
+}
+
+func HandleTaskListRead(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov8" title="1">{
+        log.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
+        tmpl, err := generateTemplate("index.html")
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">tasks := th.Read()
+
+        data := TemplateData{
+                Tasks: tasks,
+        }
+
+        err = tmpl.ExecuteTemplate(w, "index.html", data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+}
+func HandleTaskListCreate(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov0" title="0">{
+        log.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
+        if r.Method == http.MethodGet </span><span class="cov0" title="0">{
+                // Render the create form
+                tmpl, err := generateTemplate("create.html")
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, err.Error(), http.StatusInternalServerError)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">err = tmpl.ExecuteTemplate(w, "create.html", nil)
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, err.Error(), http.StatusInternalServerError)
+                        return
+                }</span>
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov0" title="0">if r.Method == http.MethodPost </span><span class="cov0" title="0">{
+                log.Println("Post method call")
+                // Parse the form data
+                err := r.ParseForm()
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, err.Error(), http.StatusBadRequest)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">update, err := ExtractFormValues(r)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, "Invalid category", http.StatusBadRequest)
+                        return
+                }</span>
+
+                // Create the task
+                <span class="cov0" title="0">task := th.CreateTask(update)
+                if task == nil </span><span class="cov0" title="0">{
+                        http.Error(w, "Failed to create task", http.StatusInternalServerError)
+                        return
+                }</span>
+
+                // Redirect to the task list page
+                <span class="cov0" title="0">http.Redirect(w, r, "/tasks", http.StatusSeeOther)
+                return</span>
+        }
+
+        // If neither GET nor POST, return method not allowed
+        <span class="cov0" title="0">http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)</span>
+}
+
+type FormAdapter struct {
+}
+
+func ExtractFormValues(r *http.Request) (*in.TaskOptional, error) <span class="cov0" title="0">{
+        msg := r.FormValue("msg")
+        var errs []error
+
+        addErr := func(err error, msg string) </span><span class="cov0" title="0">{
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("%s: %w", msg, err))
+                }</span>
+        }
+
+        <span class="cov0" title="0">checkErr := func(err error, msg string) </span><span class="cov0" title="0">{
+                if err != nil </span><span class="cov0" title="0">{
+                        addErr(err, msg)
+                }</span>
+        }
+
+        <span class="cov0" title="0">category, err := strconv.Atoi(r.FormValue("category"))
+        checkErr(err, "Invalid category")
+
+        plannedAt, err := time.Parse("2006-01-02T15:04", r.FormValue("plannedAt"))
+        checkErr(err, "invalid planned time")
+
+        done, err := strconv.ParseBool(r.FormValue("done"))
+        checkErr(err, "invalid done value")
+
+        if len(errs) &gt; 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("form value errors: %v", errs)
+        }</span>
+
+        <span class="cov0" title="0">update := &amp;in.TaskOptional{
+                Done:      &amp;done,
+                Msg:       in.StringPtr(msg),
+                Category:  (*in.TaskCategory)(&amp;category),
+                PlannedAt: &amp;plannedAt,
+        }
+
+        return update, nil</span>
+}
+
+func HandleTaskUpdate(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov0" title="0">{
+        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+        <span class="cov0" title="0">taskIDStr := r.URL.Query().Get("id")
+        if taskIDStr == "" </span><span class="cov0" title="0">{
+                http.Error(w, "Missing Task Id", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">taskID, err := strconv.Atoi(taskIDStr)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Invalid Task ID", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov0" title="0">update, err := ExtractFormValues(r)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Error processing form values", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov0" title="0">err = th.PartialUpdateTask(taskID, update)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Error updating task", http.StatusInternalServerError)
+        }</span>
+
+}
+func HandleTaskDelete(w http.ResponseWriter, r *http.Request, th *in.TaskHolder) <span class="cov0" title="0">{
+        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+
+        // Extract the task ID from the query parameter
+        <span class="cov0" title="0">taskIDStr := r.URL.Query().Get("id")
+        if taskIDStr == "" </span><span class="cov0" title="0">{
+                http.Error(w, "Missing task ID", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov0" title="0">taskID, err := strconv.Atoi(taskIDStr)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Invalid task ID", http.StatusBadRequest)
+                return
+        }</span>
+
+        // Delete the task
+        <span class="cov0" title="0">err = th.DeleteTask(taskID)
+        if err != nil </span><span class="cov0" title="0">{
+                if err == in.ErrNotFound </span><span class="cov0" title="0">{
+                        http.Error(w, "Task not found", http.StatusNotFound)
+                }</span> else<span class="cov0" title="0"> {
+                        http.Error(w, "Internal server error", http.StatusInternalServerError)
+                }</span>
+                <span class="cov0" title="0">return</span>
+        }
+
+        // Respond with a success status
+        <span class="cov0" title="0">w.WriteHeader(http.StatusOK)</span>
 }
 </pre>
 		
