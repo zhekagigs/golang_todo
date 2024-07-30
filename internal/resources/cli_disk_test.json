@@ -1,0 +1,10 @@
+[
+  {
+    "Id": 1,
+    "Msg": "Initial Task",
+    "Category": 0,
+    "Done": false,
+    "CreatedAt": "2024-07-29T16:31:59.623871+01:00",
+    "PlannedAt": "2024-07-30T16:31:59.623871+01:00"
+  }
+]

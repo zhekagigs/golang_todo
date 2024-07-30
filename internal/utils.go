@@ -1,12 +1,16 @@
 package internal
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 )
+
+//go:embed resources
+var resourcesFiles embed.FS
 
 var timeNow = time.Now
 
@@ -73,7 +77,7 @@ func generateRandomTasks(count int) []Task {
 }
 
 func BeerAscii() string {
-	data, err := os.ReadFile("../resources/beer.txt")
+	data, err := fs.ReadFile(resourcesFiles, "resources/beer.txt")
 	if err != nil {
 		fmt.Println("error happened while reading beer logo: ", err)
 		return ""

@@ -16,11 +16,12 @@
         .marketing { color: #43a047; }
         .logistics { color: #fb8c00; }
         .quality { color: #e53935; }
+        .delete-btn { background-color: #e53935; color: white; border: none; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
     <h1>Task List</h1>
-    
+    <a href="/tasks/create">Create Task</a>
     {{if .Tasks}}
         <table>
             <thead>
@@ -31,6 +32,7 @@
                     <th>Status</th>
                     <th>Created At</th>
                     <th>Planned At</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,6 +48,9 @@
                         <td>{{if .Done}}Completed{{else}}Pending{{end}}</td>
                         <td>{{formatDate .CreatedAt}}</td>
                         <td>{{formatDate .PlannedAt}}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteTask({{.Id}})">Delete</button>
+                        </td>
                     </tr>
                 {{end}}
             </tbody>
@@ -53,8 +58,23 @@
     {{else}}
         <p>No tasks found.</p>
     {{end}}
-
     <script>
-    </script>
+        function deleteTask(taskId) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                fetch(`/tasks?id=${taskId}`, { method: 'DELETE' })
+                    .then(response => {
+                        if (response.ok) {
+                            location.reload();
+                        } else {
+                            alert('Failed to delete the task');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the task');
+                    });
+            }
+        }
+        </script>
 </body>
 </html>

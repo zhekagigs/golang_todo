@@ -109,13 +109,13 @@ func TestReadAndWriteJson(t *testing.T) {
 		taskA := NewTask(1, "Brew", 0, TimeExample)
 		taskB := NewTask(2, "Advertise", 1, TimeExample)
 
-		err := WriteToJson("../resources/test_tasks.json", taskA, taskB)
+		err := WriteToJson("resources/test_tasks.json", taskA, taskB)
 
 		if err != nil {
 			t.Errorf("Unexpected err %v", err)
 		}
 
-		got, err := ReadTasksFromJSON("../resources/test_tasks.json")
+		got, err := ReadTasksFromJSON("resources/test_tasks.json")
 		if err != nil {
 			t.Errorf("ReadFromJson failed!")
 		}

@@ -40,10 +40,15 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server H
 
 func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) {
 	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
-		frontend.HandleTaskListRead(w, r, taskHolder)
+		if r.Method == http.MethodDelete {
+			frontend.HandleTaskDelete(w, r, taskHolder)
+		} else {
+			frontend.HandleTaskListRead(w, r, taskHolder)
+		}
 	})
 
-	http.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/tasks/create", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("handling create")
 		frontend.HandleTaskListCreate(w, r, taskHolder)
 	})
 

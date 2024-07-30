@@ -43,7 +43,7 @@ func TestReadTasks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := in.NewTaskHolder("../resources/cli_disk_test.json")
+			taskHolder := in.NewTaskHolder("../internal/resources/cli_disk_test.json")
 			tt.setupTasks(taskHolder)
 
 			old, r, w := in.CaptureStdout()
@@ -98,7 +98,7 @@ func TestCreateCLITask(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := in.NewTaskHolder("../resources/cli_disk_test.json")
+			taskHolder := in.NewTaskHolder("../internal/resources/cli_disk_test.json")
 			reader := bufio.NewReader(strings.NewReader(tt.input))
 
 			err := createTask(taskHolder, reader)
@@ -123,7 +123,7 @@ func TestCreateCLITask(t *testing.T) {
 
 func TestDeleteCLITask(t *testing.T) {
 	setupTaskHolder := func() *in.TaskHolder {
-		th := in.NewTaskHolder("../resources/cli_disk_test.json")
+		th := in.NewTaskHolder("..internal/resources/cli_disk_test.json")
 		th.CreateTask("in.Task 1", in.Brewing, time.Now().Add(24*time.Hour))
 		th.CreateTask("in.Task 2", in.Marketing, time.Now().Add(48*time.Hour))
 		th.CreateTask("in.Task 3", in.Logistics, time.Now().Add(72*time.Hour))
@@ -155,7 +155,7 @@ func TestDeleteCLITask(t *testing.T) {
 			name:   "Delete from empty in.in.TaskHolder",
 			taskId: 1,
 			setupHolder: func() *in.TaskHolder {
-				return in.NewTaskHolder("../resources/cli_disk_test.json")
+				return in.NewTaskHolder("../internal/resources/cli_disk_test.json")
 			},
 			expectedError: true,
 			expectedTasks: 0,
@@ -409,7 +409,7 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			taskHolder := in.NewTaskHolder("../resources/cli_disk_test.json")
+			taskHolder := in.NewTaskHolder("../internal/resources/cli_disk_test.json")
 			tt.setup(taskHolder)
 
 			reader := bufio.NewReader(strings.NewReader(tt.input))
@@ -427,8 +427,7 @@ func TestExecuteCommand(t *testing.T) {
 }
 
 func TestRunCLI(t *testing.T) {
-	// t.Skip("Not ready")
-	taskHolder := in.ProvideTaskHolder()
+	taskHolder := in.ProvideTaskHolderPath("../internal/resources/cli_disk_test.json")
 
 	oldstd, read, write := in.CaptureStdout()
 	oldstdIn, inRead, inWrite := in.CaptureStdin()
@@ -507,7 +506,7 @@ func TestMainAndPrintHelp(t *testing.T) {
 		},
 		{
 			name:           "Valid file argument",
-			args:           []string{"cmd", "../resources/tasks.json"},
+			args:           []string{"cmd", "../internal/resources/tasks.json"},
 			expectedOutput: []string{"Microbrewery Tasks Application"},
 			expectExit:     0,
 		},

@@ -30,7 +30,7 @@ func TestGenerateRandomTasks(t *testing.T) {
 
 func TestBeerAscii(t *testing.T) {
 	got := BeerAscii()
-	want, err := os.ReadFile("../resources/beer.txt")
+	want, err := os.ReadFile("resources/beer.txt")
 	check(err)
 	if string(want) != got {
 		t.Errorf("got %v want %v", got, want)
