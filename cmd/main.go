@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/zhekagigs/golang_todo/cli"
+	"github.com/zhekagigs/golang_todo/handlers"
 	"github.com/zhekagigs/golang_todo/internal"
+	"github.com/zhekagigs/golang_todo/logger"
 	"github.com/zhekagigs/golang_todo/view"
 )
 
@@ -31,33 +33,44 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server H
 		return exitCode
 	}
 
-	go startHTTPServer(taskHolder, server)
+	renderer, err := view.NewRenderer()
+	if err != nil {
+		logger.Error.Printf("error starting view renderer")
+	}
+	taskHandler := handlers.NewTaskHandler(taskHolder, renderer)
+
+	go startHTTPServer(taskHandler, server)
 
 	returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
 	time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
 	return returnCode
 }
 
-func startHTTPServer(taskHolder *internal.TaskHolder, server HTTPServer) {
+func startHTTPServer(taskHandler *handlers.TaskHandler, server HTTPServer) {
 	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodDelete {
-			view.HandleTaskDelete(w, r, taskHolder)
-		} else if r.Method == http.MethodPatch {
-			view.HandleTaskUpdate(w, r, taskHolder)
-		} else {
-
-			view.HandleTaskListRead(w, r, taskHolder)
+		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
+		switch r.Method {
+		case http.MethodGet:
+			taskHandler.HandleTaskListRead(w, r)
+		case http.MethodDelete:
+			taskHandler.HandleTaskDelete(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
+	http.HandleFunc("/tasks/update", func(w http.ResponseWriter, r *http.Request) {
+		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
+		taskHandler.HandleTaskUpdate(w, r)
+	})
+
 	http.HandleFunc("/tasks/create", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("handling create")
-		view.HandleTaskListCreate(w, r, taskHolder)
+		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
+		taskHandler.HandleTaskCreate(w, r)
 	})
 
 	log.Println("Starting server on :8080")
 	if err := server.ListenAndServe(":8080", nil); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Error.Fatalf("Failed to start server: %v", err)
 	}
-
 }

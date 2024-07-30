@@ -13,6 +13,16 @@ type TaskOptional struct {
 	PlannedAt *time.Time
 }
 
+// mainly to mock test
+type TaskService interface {
+	Read() []Task
+	CreateTask(*TaskOptional) *Task
+	FindTaskById(int) (*Task, error)
+	PartialUpdateTask(int, *TaskOptional) error
+	DeleteTask(int) error
+}
+
+// implements TaskService interface
 type TaskHolder struct {
 	latestId int
 	Tasks    []Task

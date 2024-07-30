@@ -3,24 +3,16 @@
     "Id": 1,
     "Msg": "Test Task",
     "Category": 0,
-    "Done": false,
+    "Done": true,
     "CreatedAt": "2024-07-29T16:46:50.882771+01:00",
     "PlannedAt": "2023-08-01T12:00:00Z"
   },
   {
     "Id": 2,
-    "Msg": "Test Task",
-    "Category": 0,
-    "Done": false,
+    "Msg": "Test Task2",
+    "Category": 1,
+    "Done": true,
     "CreatedAt": "2024-07-29T16:46:53.586636+01:00",
-    "PlannedAt": "2023-08-01T12:00:00Z"
-  },
-  {
-    "Id": 3,
-    "Msg": "Test Task",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-29T16:47:00.572296+01:00",
     "PlannedAt": "2023-08-01T12:00:00Z"
   },
   {
@@ -30,5 +22,21 @@
     "Done": false,
     "CreatedAt": "2024-07-29T16:48:31.312958+01:00",
     "PlannedAt": "2023-08-01T12:00:00Z"
+  },
+  {
+    "Id": 4,
+    "Msg": "asd",
+    "Category": 0,
+    "Done": false,
+    "CreatedAt": "2024-07-30T14:09:31.208111+01:00",
+    "PlannedAt": "2024-08-09T14:09:00Z"
+  },
+  {
+    "Id": 6,
+    "Msg": "buy 30kg of hops",
+    "Category": 3,
+    "Done": true,
+    "CreatedAt": "2024-07-30T14:11:41.084078+01:00",
+    "PlannedAt": "2024-09-19T14:11:00Z"
   }
 ]

@@ -99,3 +99,7 @@ func CategoryPtr(c TaskCategory) *TaskCategory {
 func TimePtr(t time.Time) *time.Time {
 	return &t
 }
+
+func BoolPtr(b bool) *bool {
+	return &b
+}

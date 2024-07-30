@@ -1,21 +1,97 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Update Task Form</title>
-</head>
-<body>
-    <h1>Update Task Form</h1>
-    <form action="" method="post" id="update-task-form">
-        <label for="title">Task:</label>
-        <input type="text" name="title" placeholder={{.Task.Msg}} required><br><br>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Update Task</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #333;
+      }
+      form {
+        background: #f4f4f4;
+        padding: 20px;
+        border-radius: 5px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      input[type="text"],
+      textarea,
+      select,
+      input[type="datetime-local"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #af149f;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      button:hover {
+        background-color: #8e1183;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Update Task</h1>
+    <form action="/tasks/update?id={{.Task.Id}}" method="post">
+      <input type="hidden" name="id" value="{{.Task.Id}}" />
 
-        <label for="done">Done:</label>
-        <textarea name="done" placeholder={{.Task.Done}}></textarea><br><br>
+      <label for="msg">Task:</label>
+      <input type="text" id="msg" name="msg" value="{{.Task.Msg}}" required />
 
-        <label for="due-date">Due Date:</label>
-        <input type="date" name="due_date" required><br><br>
+      <label for="category">Category:</label>
+      <select id="category" name="category" required>
+        <option value="0" {{if eq .Task.Category 0}}selected{{end}}>
+          Brewing
+        </option>
+        <option value="1" {{if eq .Task.Category 1}}selected{{end}}>
+          Marketing
+        </option>
+        <option value="2" {{if eq .Task.Category 2}}selected{{end}}>
+          Logistics
+        </option>
+        <option value="3" {{if eq .Task.Category 3}}selected{{end}}>
+          Quality
+        </option>
+      </select>
 
-        <button type="submit">Update Task</button>
+      <label for="done">Status:</label>
+      <select id="done" name="done">
+        <option value="false" {{if not .Task.Done}}selected{{end}}>
+          Pending
+        </option>
+        <option value="true" {{if .Task.Done}}selected{{end}}>Completed</option>
+      </select>
+
+      <!-- <label for="planned_at">Planned At:</label>
+      <input type="datetime-local" id="planned_at" name="planned_at"
+      value="{{.Task.PlannedAt.Format "2006-01-02T15:04"}}" required> -->
+
+      <button type="submit">Update Task</button>
     </form>
-</body>
+
+    <!-- <script>
+      document.getElementById("updateForm").onsubmit = function () {
+        var id = document.getElementById("taskId").value;
+        this.action = "/tasks/update?id=" + encodeURIComponent(id);
+        return true;
+      };
+    </script> -->
+  </body>
 </html>
