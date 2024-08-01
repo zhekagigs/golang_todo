@@ -16,27 +16,43 @@
     "PlannedAt": "2023-08-01T12:00:00Z"
   },
   {
-    "Id": 4,
-    "Msg": "Test Task",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-29T16:48:31.312958+01:00",
-    "PlannedAt": "2023-08-01T12:00:00Z"
-  },
-  {
-    "Id": 4,
-    "Msg": "asd",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-30T14:09:31.208111+01:00",
-    "PlannedAt": "2024-08-09T14:09:00Z"
-  },
-  {
     "Id": 6,
-    "Msg": "buy 30kg of hops",
-    "Category": 3,
-    "Done": true,
-    "CreatedAt": "2024-07-30T14:11:41.084078+01:00",
-    "PlannedAt": "2024-09-19T14:11:00Z"
+    "Msg": "Api Json Task",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-31T11:56:58.052408+01:00",
+    "PlannedAt": "2026-01-02T15:04:05Z"
+  },
+  {
+    "Id": 7,
+    "Msg": "Api Json Task",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-31T11:57:13.051478+01:00",
+    "PlannedAt": "2026-01-02T15:04:05Z"
+  },
+  {
+    "Id": 8,
+    "Msg": "Api Json Task3",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-31T13:53:06.343127+01:00",
+    "PlannedAt": "2026-01-02T15:04:05Z"
+  },
+  {
+    "Id": 9,
+    "Msg": "Api Json Task3",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-31T13:53:59.171744+01:00",
+    "PlannedAt": "2026-01-02T15:04:05Z"
+  },
+  {
+    "Id": 7,
+    "Msg": "Api Json Task3",
+    "Category": 1,
+    "Done": false,
+    "CreatedAt": "2024-07-31T13:54:31.114974+01:00",
+    "PlannedAt": "2026-01-02T15:04:05Z"
   }
 ]

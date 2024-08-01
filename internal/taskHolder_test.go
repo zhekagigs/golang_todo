@@ -28,6 +28,7 @@ func TestAddTask(t *testing.T) {
 		th := NewTaskHolder("resources/cli_disk_test.json")
 		task := ProvideTask(t)
 		th.Add(task)
+
 		if len(th.Tasks) != 1 {
 			t.Errorf("Expected tasks to be 1, got %d tasks", len(th.Tasks))
 		}
@@ -237,7 +238,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		newPlannedAt := time.Now().Add(48 * time.Hour)
-		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{PlannedAt: &newPlannedAt})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{PlannedAt: &CustomTime{newPlannedAt}})
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
@@ -253,7 +254,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		th, initialTask := setupTest()
 
 		pastTime := time.Now().Add(-24 * time.Hour)
-		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{PlannedAt: &pastTime})
+		err := th.PartialUpdateTask(initialTask.Id, &TaskOptional{PlannedAt: &CustomTime{pastTime}})
 		if _, ok := err.(*PastPlannedTimeError); !ok {
 			t.Errorf("Expected PastPlannedTimeError, got %v", err)
 		}
@@ -281,7 +282,7 @@ func TestPartialUpdateTask(t *testing.T) {
 			Done:      &newDone,
 			Msg:       &newMsg,
 			Category:  &newCategory,
-			PlannedAt: &newPlannedAt,
+			PlannedAt: &CustomTime{newPlannedAt},
 		}
 
 		err := th.PartialUpdateTask(initialTask.Id, update)

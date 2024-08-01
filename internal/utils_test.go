@@ -20,7 +20,7 @@ func TestFormatDatetime(t *testing.T) {
 
 func TestGenerateRandomTasks(t *testing.T) {
 	want := 10
-	got := len(generateRandomTasks(10))
+	got := len(GenerateRandomTasks(10))
 
 	if want != got {
 		t.Errorf("got %v want %v", got, want)

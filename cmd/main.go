@@ -13,21 +13,11 @@ import (
 	"github.com/zhekagigs/golang_todo/view"
 )
 
-type HTTPServer interface {
-	ListenAndServe(addr string, handler http.Handler) error
-}
-
-type RealHTTPServer struct{}
-
-func (s *RealHTTPServer) ListenAndServe(addr string, handler http.Handler) error {
-	return http.ListenAndServe(addr, handler)
-}
-
 func main() {
-	os.Exit(RealMain(internal.NewTaskHolder, &RealHTTPServer{}, &cli.RealCLIApp{}))
+	os.Exit(RealMain(internal.NewTaskHolder, &handlers.RealHTTPServer{}, &cli.RealCLIApp{}))
 }
 
-func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server HTTPServer, cliApp cli.CLIApp) int {
+func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server handlers.HTTPServer, cliApp cli.CLIApp) int {
 	taskHolder, checkExit, exitCode := cliApp.AppStarter(newTaskHolder)
 	if checkExit {
 		return exitCode
@@ -37,16 +27,25 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server H
 	if err != nil {
 		logger.Error.Printf("error starting view renderer")
 	}
-	taskHandler := handlers.NewTaskHandler(taskHolder, renderer)
 
-	go startHTTPServer(taskHandler, server)
+	taskHandler := handlers.NewTaskHandler(taskHolder, renderer)
+	api := handlers.NewApiService(taskHolder)
+
+	go startHTTPServer(taskHandler, server, api)
 
 	returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
 	time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
 	return returnCode
 }
 
-func startHTTPServer(taskHandler *handlers.TaskHandler, server HTTPServer) {
+func startHTTPServer(taskHandler *handlers.TaskRenderHandler, server handlers.HTTPServer, api *handlers.ApiService) {
+
+	router := http.NewServeMux()
+	router.Handle("/api/", api) //why?
+	router.HandleFunc("GET /api/tasks", api.GetAllPosts)
+	router.HandleFunc("GET /api/tasks/{id}", api.GetTaskById)
+	router.HandleFunc("POST /api/tasks", api.CreateTask)
+
 	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
 		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
 		switch r.Method {
@@ -70,7 +69,33 @@ func startHTTPServer(taskHandler *handlers.TaskHandler, server HTTPServer) {
 	})
 
 	log.Println("Starting server on :8080")
-	if err := server.ListenAndServe(":8080", nil); err != nil {
+	if err := server.ListenAndServe(":8080", router); err != nil {
 		logger.Error.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+func logMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Create a custom response writer to capture the status code
+		crw := &customResponseWriter{ResponseWriter: w}
+
+		next.ServeHTTP(crw, r)
+
+		duration := time.Since(start)
+
+		log.Printf(
+			"Method: %s, Path: %s, Status: %d, Duration: %v",
+			r.Method,
+			r.URL.Path,
+			crw.status,
+			duration,
+		)
+	}
+}
+
+type customResponseWriter struct {
+	http.ResponseWriter
+	status int
 }

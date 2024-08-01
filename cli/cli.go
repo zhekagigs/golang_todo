@@ -78,7 +78,11 @@ func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder fun
 		fileName = "resources/disk.json"
 	}
 	taskHolder := newTaskHolder(fileName)
+	// var maxId int TODO ?
 	for _, task := range savedTasks {
+		// if task.Id > maxId {
+		// 	maxId = task.Id
+		// }
 		taskHolder.Add(task)
 	}
 	return taskHolder, nil
@@ -244,9 +248,17 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 	if strings.ToLower(strings.TrimSpace(updatePlannedTime)) == "y" {
 		fmt.Print("Enter new planned time (YYYY-MM-DD HH:MM): ")
 		timeStr, _ := reader.ReadString('\n')
+		fmt.Println("timeStr", timeStr)
 		if parsedTime, err := time.Parse(in.TASK_TIME_FORMAT, strings.TrimSpace(timeStr)); err == nil {
 			plannedAtPtr = &parsedTime
 		} else {
+			return err
+		}
+	}
+	customTime, err := in.NewCustomTime(plannedAtPtr)
+	if err != nil {
+		if err != in.ErrTimeNilPointer {
+			fmt.Printf("Error updating task: %v\n", err)
 			return err
 		}
 	}
@@ -255,10 +267,10 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 		Done:      donePtr,
 		Msg:       in.StringPtr(msg),
 		Category:  categoryPtr,
-		PlannedAt: plannedAtPtr,
+		PlannedAt: customTime,
 	}
 
-	err := taskHolder.PartialUpdateTask(taskId, update)
+	err = taskHolder.PartialUpdateTask(taskId, update)
 	if err != nil {
 		fmt.Printf("Error updating task: %v\n", err)
 		return err

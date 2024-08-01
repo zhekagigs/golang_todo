@@ -24,7 +24,7 @@ func formatDatetime(t time.Time) string {
 	return t.Format("Monday, January 2, 2006 at 15:04")
 }
 
-func generateRandomTasks(count int) []Task {
+func GenerateRandomTasks(count int) []Task {
 	brewingVerbs := []string{"Brew", "Ferment", "Bottle", "Label", "Clean", "Inspect", "Order", "Taste"}
 	adjectives := []string{"Hoppy", "Malty", "Crisp", "Smooth", "Tangy", "Barrel-aged", "Experimental", "Funky", "Juicy", "Hazy", "Robust", "Refreshing"}
 	beerTypes := []string{"IPA", "Stout", "Lager", "Wheat Beer", "Pale Ale", "Porter", "Sour", "Seasonal Batch"}
@@ -96,8 +96,8 @@ func CategoryPtr(c TaskCategory) *TaskCategory {
 	return &c
 }
 
-func TimePtr(t time.Time) *time.Time {
-	return &t
+func TimePtr(t time.Time) *CustomTime {
+	return &CustomTime{t}
 }
 
 func BoolPtr(b bool) *bool {

@@ -32,6 +32,7 @@ func ProvideTaskHolder() *TaskHolder {
 		CategoryPtr(Brewing),
 		TimePtr(time.Now().Add(24 * time.Hour)),
 	}
+
 	th.CreateTask(updt)
 	return th
 }

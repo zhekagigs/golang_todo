@@ -11,7 +11,7 @@ import (
 	"github.com/zhekagigs/golang_todo/view"
 )
 
-type TaskHandler struct {
+type TaskRenderHandler struct {
 	service  internal.TaskService
 	renderer view.Renderer
 }
@@ -34,7 +34,7 @@ func handleError(w http.ResponseWriter, err error, status int, message string) b
 	return false
 }
 
-func getTaskID(r *http.Request) (int, error) {
+func getTaskIdFromQuery(r *http.Request) (int, error) {
 	taskIDStr := r.URL.Query().Get("id")
 	if taskIDStr == "" {
 		return 0, fmt.Errorf("missing Task ID")
@@ -42,11 +42,11 @@ func getTaskID(r *http.Request) (int, error) {
 	return strconv.Atoi(taskIDStr)
 }
 
-func NewTaskHandler(service internal.TaskService, renderer view.Renderer) *TaskHandler {
-	return &TaskHandler{service: service, renderer: renderer}
+func NewTaskHandler(service internal.TaskService, renderer view.Renderer) *TaskRenderHandler {
+	return &TaskRenderHandler{service: service, renderer: renderer}
 }
 
-func (h *TaskHandler) HandleTaskListRead(w http.ResponseWriter, r *http.Request) {
+func (h *TaskRenderHandler) HandleTaskListRead(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -60,7 +60,7 @@ func (h *TaskHandler) HandleTaskListRead(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (h *TaskHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
+func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
 	logger.Info.Printf("Handling %s request for task creation from %s", r.Method, r.RemoteAddr)
 	switch r.Method {
 	case http.MethodGet:
@@ -91,10 +91,10 @@ func (h *TaskHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *TaskHandler) HandleTaskUpdate(w http.ResponseWriter, r *http.Request) {
+func (h *TaskRenderHandler) HandleTaskUpdate(w http.ResponseWriter, r *http.Request) {
 	logger.Info.Printf("Handling %s request for task update from %s", r.Method, r.RemoteAddr)
 
-	taskID, err := getTaskID(r)
+	taskID, err := getTaskIdFromQuery(r)
 	if handleError(w, err, http.StatusBadRequest, "Invalid task ID") {
 		return
 	}
@@ -109,7 +109,7 @@ func (h *TaskHandler) HandleTaskUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *TaskHandler) handleGetTaskUpdate(w http.ResponseWriter, taskID int) {
+func (h *TaskRenderHandler) handleGetTaskUpdate(w http.ResponseWriter, taskID int) {
 	task, err := h.service.FindTaskById(taskID)
 	if handleError(w, err, http.StatusNotFound, "Task not found") {
 		return
@@ -119,7 +119,7 @@ func (h *TaskHandler) handleGetTaskUpdate(w http.ResponseWriter, taskID int) {
 	handleError(w, err, http.StatusInternalServerError, "Error rendering update form")
 }
 
-func (h *TaskHandler) handlePostTaskUpdate(w http.ResponseWriter, r *http.Request, taskID int) {
+func (h *TaskRenderHandler) handlePostTaskUpdate(w http.ResponseWriter, r *http.Request, taskID int) {
 	update, err := ExtractFormValues(r)
 	if handleError(w, err, http.StatusBadRequest, "Invalid form data") {
 		return
@@ -135,14 +135,14 @@ func (h *TaskHandler) handlePostTaskUpdate(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, "/tasks", http.StatusSeeOther)
 }
 
-func (h *TaskHandler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
+func (h *TaskRenderHandler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
 	logger.Info.Printf("Handling %s request for task deletion from %s", r.Method, r.RemoteAddr)
 	if r.Method != http.MethodDelete {
 		logger.Error.Printf("Method not allowed: %s", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	taskID, err := getTaskID(r)
+	taskID, err := getTaskIdFromQuery(r)
 	err = h.service.DeleteTask(taskID)
 	if handleError(w, err, http.StatusInternalServerError, fmt.Sprint(taskID)) {
 		return
@@ -173,7 +173,7 @@ func ExtractFormValues(r *http.Request) (*internal.TaskOptional, error) {
 	checkErr(err, "Invalid category")
 
 	dateString := r.FormValue("plannedAt")
-	var plannedAt *time.Time
+	var plannedAt *internal.CustomTime
 	if dateString != "" {
 		plannedData, err := time.Parse("2006-01-02T15:04", dateString)
 		plannedAt = internal.TimePtr(plannedData)

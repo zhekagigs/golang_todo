@@ -73,6 +73,11 @@ func (r *TaskRenderer) RenderCreateForm(w http.ResponseWriter) error {
 
 func (r *TaskRenderer) RenderTaskUpdate(w http.ResponseWriter, task *internal.Task) error {
 	logger.Info.Println("Rendering update task form")
-	err := r.templates.ExecuteTemplate(w, "update.html", task)
+	data := struct {
+		Task *internal.Task
+	}{
+		Task: task,
+	}
+	err := r.templates.ExecuteTemplate(w, "update.html", data)
 	return renderErrCheck(err)
 }

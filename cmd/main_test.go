@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -9,10 +10,16 @@ import (
 
 type MockHTTPServer struct {
 	ListenAndServeCalledWith string
+	ShutdownCount            int
 }
 
 func (s *MockHTTPServer) ListenAndServe(addr string, handler http.Handler) error {
 	s.ListenAndServeCalledWith = addr
+	return nil
+}
+
+func (s *MockHTTPServer) Shutdown(ctx context.Context) error {
+	s.ShutdownCount++
 	return nil
 }
 

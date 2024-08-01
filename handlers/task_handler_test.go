@@ -25,7 +25,7 @@ func (m *mockTaskHolder) CreateTask(task *internal.TaskOptional) *internal.Task 
 		Id:        len(m.tasks) + 1,
 		Msg:       *task.Msg,
 		Category:  *task.Category,
-		PlannedAt: *task.PlannedAt,
+		PlannedAt: task.PlannedAt.Time,
 	}
 	m.tasks = append(m.tasks, *newTask)
 	return newTask
@@ -50,7 +50,7 @@ func (m *mockTaskHolder) PartialUpdateTask(id int, update *internal.TaskOptional
 				m.tasks[i].Category = *update.Category
 			}
 			if update.PlannedAt != nil {
-				m.tasks[i].PlannedAt = *update.PlannedAt
+				m.tasks[i].PlannedAt = update.PlannedAt.Time
 			}
 			if update.Done != nil {
 				m.tasks[i].Done = *update.Done
@@ -274,7 +274,7 @@ func TestExtractFormValues(t *testing.T) {
 	}
 
 	expectedTime, _ := time.Parse("2006-01-02T15:04", "2023-05-01T10:00")
-	if !taskOptional.PlannedAt.Equal(expectedTime) {
+	if !taskOptional.PlannedAt.Time.Equal(expectedTime) {
 		t.Errorf("Expected plannedAt %v, got %v", expectedTime, *taskOptional.PlannedAt)
 	}
 
