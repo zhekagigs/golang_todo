@@ -27,7 +27,7 @@ func TestReadTasks(t *testing.T) {
 		{
 			name: "Single task",
 			setupTasks: func(th *in.TaskHolder) {
-				updt := &in.TaskOptional{
+				updt := in.TaskOptional{
 					Done:      nil,
 					Msg:       in.StringPtr("Test task 1"),
 					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
@@ -40,13 +40,13 @@ func TestReadTasks(t *testing.T) {
 		{
 			name: "Multiple tasks",
 			setupTasks: func(th *in.TaskHolder) {
-				th.CreateTask(&in.TaskOptional{
+				th.CreateTask(in.TaskOptional{
 					Done:      nil,
 					Msg:       in.StringPtr("Task 1"),
 					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
 					PlannedAt: in.TimePtr(in.MockTime),
 				})
-				th.CreateTask(&in.TaskOptional{
+				th.CreateTask(in.TaskOptional{
 					Done:      nil,
 					Msg:       in.StringPtr("Test task 2"),
 					Category:  in.CategoryPtr(in.TaskCategory(in.Marketing)),
@@ -140,19 +140,19 @@ func TestCreateCLITask(t *testing.T) {
 func TestDeleteCLITask(t *testing.T) {
 	setupTaskHolder := func() *in.TaskHolder {
 		th := in.NewTaskHolder("..internal/resources/cli_disk_test.json")
-		th.CreateTask(&in.TaskOptional{
+		th.CreateTask(in.TaskOptional{
 			Done:      nil,
 			Msg:       in.StringPtr("Test task 1"),
 			Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
 			PlannedAt: in.TimePtr(in.MockTime),
 		})
-		th.CreateTask(&in.TaskOptional{
+		th.CreateTask(in.TaskOptional{
 			Done:      nil,
 			Msg:       in.StringPtr("Test task 2"),
 			Category:  in.CategoryPtr(in.TaskCategory(in.Marketing)),
 			PlannedAt: in.TimePtr(in.MockTime),
 		})
-		th.CreateTask(&in.TaskOptional{
+		th.CreateTask(in.TaskOptional{
 			Done:      nil,
 			Msg:       in.StringPtr("Test task 3"),
 			Category:  in.CategoryPtr(in.TaskCategory(in.Logistics)),
@@ -387,7 +387,7 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:    UPDATE,
 			taskId: 1,
 			setup: func(th *in.TaskHolder) {
-				th.CreateTask(&in.TaskOptional{
+				th.CreateTask(in.TaskOptional{
 					Done:      nil,
 					Msg:       in.StringPtr("Update task 1"),
 					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),
@@ -402,7 +402,7 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:    DELETE,
 			taskId: 1,
 			setup: func(th *in.TaskHolder) {
-				th.CreateTask(&in.TaskOptional{
+				th.CreateTask(in.TaskOptional{
 					Done:      nil,
 					Msg:       in.StringPtr("Task to delete"),
 					Category:  in.CategoryPtr(in.TaskCategory(in.Brewing)),

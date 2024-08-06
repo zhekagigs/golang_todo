@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var MockTime = time.Date(2023, 7, 23, 12, 0, 0, 0, time.UTC)
+var MockTime = time.Date(2023, 7, 23, 12, 0, 0, 0, time.UTC).Truncate(0)
 
 func ProvideMocktimeNow(t *testing.T) func() time.Time {
 	originalTimeNow := timeNow
@@ -26,7 +26,7 @@ func ProvideTask(t *testing.T) Task {
 
 func ProvideTaskHolder() *TaskHolder {
 	th := NewTaskHolder("resources/cli_disk_test.json")
-	updt := &TaskOptional{
+	updt := TaskOptional{
 		nil,
 		StringPtr("Initial Task"),
 		CategoryPtr(Brewing),
@@ -39,7 +39,7 @@ func ProvideTaskHolder() *TaskHolder {
 
 func ProvideTaskHolderWithPath(path string) *TaskHolder {
 	th := NewTaskHolder(path)
-	updt := &TaskOptional{
+	updt := TaskOptional{
 		nil,
 		StringPtr("Initial Task"),
 		CategoryPtr(Brewing),
@@ -51,7 +51,7 @@ func ProvideTaskHolderWithPath(path string) *TaskHolder {
 func MockNewTaskHolder(diskPath string) *TaskHolder {
 
 	th := NewTaskHolder("resources/cli_disk_test.json")
-	updt := &TaskOptional{
+	updt := TaskOptional{
 		nil,
 		StringPtr("Initial Task"),
 		CategoryPtr(Brewing),

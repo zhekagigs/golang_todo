@@ -61,7 +61,7 @@ func TestCreateTask(t *testing.T) {
 	fmt.Println(category)
 	plannedAt := time.Now()
 
-	updt := &TaskOptional{
+	updt := TaskOptional{
 		nil,
 		StringPtr(taskValue),
 		CategoryPtr(category),
@@ -101,7 +101,7 @@ func TestFindTaskById(t *testing.T) {
 	fmt.Println(category)
 	plannedAt := time.Now()
 
-	updt := &TaskOptional{
+	updt := TaskOptional{
 		nil,
 		StringPtr(taskValue),
 		CategoryPtr(category),
@@ -142,7 +142,7 @@ func TestPartialUpdateTask(t *testing.T) {
 		fmt.Println(category)
 		plannedAt := time.Now()
 
-		updt := &TaskOptional{
+		updt := TaskOptional{
 			nil,
 			StringPtr(taskValue),
 			CategoryPtr(category),
@@ -317,8 +317,8 @@ func TestDeleteTask(t *testing.T) {
 			Category:  CategoryPtr(TaskCategory(1)),
 			PlannedAt: TimePtr(time.Now().Add(time.Minute)),
 		}
-		task1 := th.CreateTask(&update)
-		th.CreateTask(&TaskOptional{Msg: StringPtr("Task 2"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now())})
+		task1 := th.CreateTask(update)
+		th.CreateTask(TaskOptional{Msg: StringPtr("Task 2"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now())})
 
 		err := th.DeleteTask(task1.Id)
 		if err != nil {
@@ -337,8 +337,8 @@ func TestDeleteTask(t *testing.T) {
 
 	t.Run("Delete task with wrong id", func(t *testing.T) {
 		th := NewTaskHolder("resources/test_tasks.json")
-		th.CreateTask(&TaskOptional{Msg: StringPtr("Task 1"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now().Add(time.Minute))})
-		th.CreateTask(&TaskOptional{Msg: StringPtr("Task 2"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now())})
+		th.CreateTask(TaskOptional{Msg: StringPtr("Task 1"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now().Add(time.Minute))})
+		th.CreateTask(TaskOptional{Msg: StringPtr("Task 2"), Category: CategoryPtr(TaskCategory(1)), PlannedAt: TimePtr(time.Now())})
 
 		err := th.DeleteTask(9999)
 		if err == nil {

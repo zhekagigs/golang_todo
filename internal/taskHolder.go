@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type TaskOptional struct {
 	Msg       *string       `json:"msg"`
 	Category  *TaskCategory `json:"category"`
 	PlannedAt *CustomTime   `json:"plannedAt"`
+	// trackerId uuid.UUID
 }
 
 func AdapterTaskOptional(task Task) TaskOptional {
@@ -71,9 +73,9 @@ func (ct *CustomTime) AsTime() time.Time {
 }
 
 // mainly to mock test
-type TaskService interface {
+type TaskServiceInterface interface {
 	Read() []Task
-	CreateTask(*TaskOptional) *Task
+	CreateTask(TaskOptional) *Task
 	FindTaskById(int) (*Task, error)
 	PartialUpdateTask(int, *TaskOptional) error
 	DeleteTask(int) error
@@ -81,9 +83,11 @@ type TaskService interface {
 
 // implements TaskService interface
 type TaskHolder struct {
-	latestId int
-	Tasks    []Task
-	DiskPath string
+	latestId  int
+	Tasks     []Task
+	DiskPath  string
+	TasksPipe chan Task
+	sync.Mutex
 }
 
 func NewTaskHolder(diskPath string) *TaskHolder {
@@ -100,6 +104,8 @@ func (t *TaskHolder) Count() (int, int) {
 }
 
 func (t *TaskHolder) Add(task Task) {
+	t.Lock()
+	defer t.Unlock()
 	t.latestId++
 	// if task.Id < t.latestId {
 	// 	task.Id = t.latestId
@@ -108,7 +114,9 @@ func (t *TaskHolder) Add(task Task) {
 
 }
 
-func (t *TaskHolder) CreateTask(update *TaskOptional) *Task {
+func (t *TaskHolder) CreateTask(update TaskOptional) *Task {
+	t.Lock()
+	defer t.Unlock()
 	t.latestId++
 
 	var msg string
@@ -141,6 +149,8 @@ func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) {
 }
 
 func (t *TaskHolder) PartialUpdateTask(taskId int, update *TaskOptional) error {
+	t.Lock()
+	defer t.Unlock()
 	task, err := t.FindTaskById(taskId)
 	if err != nil {
 		return err
@@ -175,6 +185,8 @@ func (t *TaskHolder) PartialUpdateTask(taskId int, update *TaskOptional) error {
 }
 
 func (t *TaskHolder) DeleteTask(taskId int) error {
+	t.Lock()
+	defer t.Unlock()
 	index := -1
 	topId := -1
 	for i, task := range t.Tasks {

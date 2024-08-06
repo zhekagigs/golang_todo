@@ -55,27 +55,29 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (89.3%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (91.1%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (51.3%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (52.5%)</option>
 				
 				<option value="file2">github.com/zhekagigs/golang_todo/handlers/api.go (16.7%)</option>
 				
 				<option value="file3">github.com/zhekagigs/golang_todo/handlers/serv.go (0.0%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/handlers/task_handler.go (67.0%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/handlers/task_handler.go (65.7%)</option>
 				
 				<option value="file5">github.com/zhekagigs/golang_todo/internal/task.go (74.3%)</option>
 				
-				<option value="file6">github.com/zhekagigs/golang_todo/internal/taskHolder.go (70.8%)</option>
+				<option value="file6">github.com/zhekagigs/golang_todo/internal/taskHolder.go (73.8%)</option>
 				
-				<option value="file7">github.com/zhekagigs/golang_todo/internal/testutils.go (89.5%)</option>
+				<option value="file7">github.com/zhekagigs/golang_todo/internal/taskService.go (0.0%)</option>
 				
-				<option value="file8">github.com/zhekagigs/golang_todo/internal/utils.go (73.1%)</option>
+				<option value="file8">github.com/zhekagigs/golang_todo/internal/testutils.go (89.5%)</option>
 				
-				<option value="file9">github.com/zhekagigs/golang_todo/logger/logger.go (100.0%)</option>
+				<option value="file9">github.com/zhekagigs/golang_todo/internal/utils.go (78.8%)</option>
 				
-				<option value="file10">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
+				<option value="file10">github.com/zhekagigs/golang_todo/logger/logger.go (100.0%)</option>
+				
+				<option value="file11">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
 				
 				</select>
 			</div>
@@ -264,7 +266,7 @@ func executeCommand(cmd commands, taskId int, taskHolder *in.TaskHolder, reader 
                 fmt.Println("Invalid command. Please try again.")</span>
         }
 
-        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
                 fmt.Println("Failed operation with error: ", err)
         }</span>
 
@@ -362,7 +364,7 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
         }
 
         err = taskHolder.PartialUpdateTask(taskId, update)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
                 fmt.Printf("Error updating task: %v\n", err)
                 return err
         }</span> else<span class="cov8" title="1"> {
@@ -401,7 +403,7 @@ func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error <span cla
         if err == nil </span><span class="cov8" title="1">{
                 plannedParsedAt = parsedTime
         }</span>
-        <span class="cov8" title="1">updt := &amp;in.TaskOptional{
+        <span class="cov8" title="1">updt := in.TaskOptional{
                 Done:      nil,
                 Msg:       in.StringPtr(taskValue),
                 Category:  in.CategoryPtr(in.TaskCategory(categoryNum)),
@@ -453,11 +455,12 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server h
         if err != nil </span><span class="cov0" title="0">{
                 logger.Error.Printf("error starting view renderer")
         }</span>
+        <span class="cov8" title="1">taskConcurrentService := internal.NewConcurrentTaskService(taskHolder)
+        taskRenderHandler := handlers.NewTaskRenderHandler(taskHolder, renderer)
 
-        <span class="cov8" title="1">taskHandler := handlers.NewTaskHandler(taskHolder, renderer)
-        api := handlers.NewApiService(taskHolder)
+        api := handlers.NewApiService(taskConcurrentService)
 
-        go startHTTPServer(taskHandler, server, api)
+        go startHTTPServer(taskRenderHandler, server, api)
 
         returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
         time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
@@ -545,21 +548,22 @@ var (
 )
 
 type ApiService struct {
-        taskHolder *internal.TaskHolder
+        // taskService  *internal.TaskHolder
+        taskService *internal.ConcurrentTaskService
 }
 
 func (apiHandler ApiService) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
         logger.Info.Printf("ServeHttp Received %s request for %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 }</span>
 
-func NewApiService(internal *internal.TaskHolder) *ApiService <span class="cov8" title="1">{
+func NewApiService(internal *internal.ConcurrentTaskService) *ApiService <span class="cov8" title="1">{
         return &amp;ApiService{
-                taskHolder: internal,
+                taskService: internal,
         }
 }</span>
 
 func (api *ApiService) GetAllPosts(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
-        posts := api.taskHolder.Read()
+        posts := api.taskService.Read()
 
         postsJson, err := json.Marshal(posts)
         if isJsonErr(err, w) </span><span class="cov0" title="0">{
@@ -575,7 +579,7 @@ func (api *ApiService) GetTaskById(w http.ResponseWriter, r *http.Request) <span
         if handleError(w, err, http.StatusInternalServerError, "api: error processing taskId") </span><span class="cov0" title="0">{
                 return
         }</span>
-        <span class="cov0" title="0">task, err := api.taskHolder.FindTaskById(taskId)
+        <span class="cov0" title="0">task, err := api.taskService.FindTaskById(taskId)
         if handleError(w, err, http.StatusInternalServerError, "api: task not found") </span><span class="cov0" title="0">{
                 return
         }</span>
@@ -596,7 +600,7 @@ func (api *ApiService) CreateTask(w http.ResponseWriter, r *http.Request) <span 
                 return
         }</span>
 
-        <span class="cov8" title="1">task := api.taskHolder.CreateTask(taskRequest)
+        <span class="cov8" title="1">task := api.taskService.CreateTask(*taskRequest)
         taskAsJson, err := json.Marshal(task)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, ErrInternal.Error(), http.StatusInternalServerError)
@@ -618,7 +622,7 @@ func (api *ApiService) UpdateTask(w http.ResponseWriter, r *http.Request) <span 
         if handleError(w, err, http.StatusBadRequest, "error parsing taskId") </span><span class="cov0" title="0">{
                 return
         }</span>
-        <span class="cov0" title="0">task := api.taskHolder.PartialUpdateTask(taskId, taskRequest)
+        <span class="cov0" title="0">task := api.taskService.PartialUpdateTask(taskId, taskRequest)
         taskAsJson, err := json.Marshal(task)
         if err != nil </span><span class="cov0" title="0">{
                 http.Error(w, ErrInternal.Error(), http.StatusInternalServerError)
@@ -636,7 +640,7 @@ func (api *ApiService) DeleteTask(w http.ResponseWriter, r *http.Request) <span 
                 return
         }</span>
 
-        <span class="cov0" title="0">err = api.taskHolder.DeleteTask(taskId)
+        <span class="cov0" title="0">err = api.taskService.DeleteTask(taskId)
         if handleError(w, err, http.StatusBadRequest, "api: task not foound") </span><span class="cov0" title="0">{
                 return
         }</span>
@@ -697,7 +701,7 @@ import (
 )
 
 type TaskRenderHandler struct {
-        service  internal.TaskService
+        service  internal.TaskServiceInterface
         renderer view.Renderer
 }
 
@@ -727,7 +731,7 @@ func getTaskIdFromQuery(r *http.Request) (int, error) <span class="cov8" title="
         <span class="cov8" title="1">return strconv.Atoi(taskIDStr)</span>
 }
 
-func NewTaskHandler(service internal.TaskService, renderer view.Renderer) *TaskRenderHandler <span class="cov8" title="1">{
+func NewTaskRenderHandler(service internal.TaskServiceInterface, renderer view.Renderer) *TaskRenderHandler <span class="cov8" title="1">{
         return &amp;TaskRenderHandler{service: service, renderer: renderer}
 }</span>
 
@@ -746,7 +750,7 @@ func (h *TaskRenderHandler) HandleTaskListRead(w http.ResponseWriter, r *http.Re
 }
 
 func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        logger.Info.Printf("Handling %s request for task creation from %s", r.Method, r.RemoteAddr)
+        // logger.Info.Printf("Handling %s request for task creation from %s", r.Method, r.RemoteAddr)
         switch r.Method </span>{
         case http.MethodGet:<span class="cov8" title="1">
                 err := h.renderer.RenderCreateForm(w)
@@ -760,7 +764,7 @@ func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Requ
                         return
                 }</span>
 
-                <span class="cov8" title="1">task := h.service.CreateTask(taskOptional)
+                <span class="cov8" title="1">task := h.service.CreateTask(*taskOptional)
 
                 if task == nil </span><span class="cov0" title="0">{
                         logger.Error.Println("Failed to create task")
@@ -821,7 +825,7 @@ func (h *TaskRenderHandler) handlePostTaskUpdate(w http.ResponseWriter, r *http.
 }
 
 func (h *TaskRenderHandler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        logger.Info.Printf("Handling %s request for task deletion from %s", r.Method, r.RemoteAddr)
+        // logger.Info.Printf("Handling %s request for task deletion from %s", r.Method, r.RemoteAddr)
         if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
                 logger.Error.Printf("Method not allowed: %s", r.Method)
                 http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -833,12 +837,12 @@ func (h *TaskRenderHandler) HandleTaskDelete(w http.ResponseWriter, r *http.Requ
                 return
         }</span>
 
-        <span class="cov8" title="1">logger.Info.Printf("Successfully deleted task with ID: %d", taskID)
-        w.WriteHeader(http.StatusOK)</span>
+        // logger.Info.Printf("Successfully deleted task with ID: %d", taskID)
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)</span>
 }
 
 func ExtractFormValues(r *http.Request) (*internal.TaskOptional, error) <span class="cov8" title="1">{
-        logger.Info.Println("Extracting form values")
+        // logger.Info.Println("Extracting form values")
 
         var errs []error
         addErr := func(err error, msg string) </span><span class="cov0" title="0">{
@@ -1046,6 +1050,7 @@ import (
         "errors"
         "fmt"
         "strings"
+        "sync"
         "time"
 )
 
@@ -1060,6 +1065,7 @@ type TaskOptional struct {
         Msg       *string       `json:"msg"`
         Category  *TaskCategory `json:"category"`
         PlannedAt *CustomTime   `json:"plannedAt"`
+        // trackerId uuid.UUID
 }
 
 func AdapterTaskOptional(task Task) TaskOptional <span class="cov0" title="0">{
@@ -1113,9 +1119,9 @@ func (ct *CustomTime) AsTime() time.Time <span class="cov0" title="0">{
 }</span>
 
 // mainly to mock test
-type TaskService interface {
+type TaskServiceInterface interface {
         Read() []Task
-        CreateTask(*TaskOptional) *Task
+        CreateTask(TaskOptional) *Task
         FindTaskById(int) (*Task, error)
         PartialUpdateTask(int, *TaskOptional) error
         DeleteTask(int) error
@@ -1123,9 +1129,11 @@ type TaskService interface {
 
 // implements TaskService interface
 type TaskHolder struct {
-        latestId int
-        Tasks    []Task
-        DiskPath string
+        latestId  int
+        Tasks     []Task
+        DiskPath  string
+        TasksPipe chan Task
+        sync.Mutex
 }
 
 func NewTaskHolder(diskPath string) *TaskHolder <span class="cov8" title="1">{
@@ -1142,6 +1150,8 @@ func (t *TaskHolder) Count() (int, int) <span class="cov0" title="0">{
 }</span>
 
 func (t *TaskHolder) Add(task Task) <span class="cov8" title="1">{
+        t.Lock()
+        defer t.Unlock()
         t.latestId++
         // if task.Id &lt; t.latestId {
         //         task.Id = t.latestId
@@ -1150,7 +1160,9 @@ func (t *TaskHolder) Add(task Task) <span class="cov8" title="1">{
 
 }</span>
 
-func (t *TaskHolder) CreateTask(update *TaskOptional) *Task <span class="cov8" title="1">{
+func (t *TaskHolder) CreateTask(update TaskOptional) *Task <span class="cov8" title="1">{
+        t.Lock()
+        defer t.Unlock()
         t.latestId++
 
         var msg string
@@ -1183,6 +1195,8 @@ func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) <span class="cov8" 
 }
 
 func (t *TaskHolder) PartialUpdateTask(taskId int, update *TaskOptional) error <span class="cov8" title="1">{
+        t.Lock()
+        defer t.Unlock()
         task, err := t.FindTaskById(taskId)
         if err != nil </span><span class="cov8" title="1">{
                 return err
@@ -1217,6 +1231,8 @@ func (t *TaskHolder) PartialUpdateTask(taskId int, update *TaskOptional) error <
 }
 
 func (t *TaskHolder) DeleteTask(taskId int) error <span class="cov8" title="1">{
+        t.Lock()
+        defer t.Unlock()
         index := -1
         topId := -1
         for i, task := range t.Tasks </span><span class="cov8" title="1">{
@@ -1247,6 +1263,164 @@ func isValidTaskCategory(category TaskCategory) bool <span class="cov8" title="1
 		<pre class="file" id="file7" style="display: none">package internal
 
 import (
+        "fmt"
+
+        "github.com/google/uuid"
+)
+
+type TaskRequest struct {
+        Operation  string
+        Task       TaskOptional
+        TaskId     int
+        trackingId uuid.UUID
+}
+
+type TaskResult struct {
+        Task  *Task
+        Error error
+}
+
+type Worker struct {
+        id         int
+        taskHolder *TaskHolder
+        request    &lt;-chan TaskRequest
+        result     chan&lt;- TaskResult
+        quit       chan bool
+}
+
+type WorkerPool struct {
+        workers []Worker
+        // wg      sync.WaitGroup
+}
+
+type ConcurrentTaskService struct {
+        TaskHolder   *TaskHolder
+        taskRequests chan&lt;- TaskRequest
+        results      &lt;-chan TaskResult
+        workerPool   WorkerPool
+}
+
+func (w *Worker) Start() <span class="cov0" title="0">{
+        // fmt.Printf("Start worker %d\n", w.id)
+        for </span><span class="cov0" title="0">{
+                select </span>{
+                case req, ok := &lt;-w.request:<span class="cov0" title="0">
+                        // fmt.Println("Handling request by", w.id)
+                        if !ok </span><span class="cov0" title="0">{
+                                // fmt.Println("Channel not ok")
+                                return
+                        }</span>
+                        <span class="cov0" title="0">result := w.processRequest(req)
+                        w.result &lt;- result</span>
+                case &lt;-w.quit:<span class="cov0" title="0">
+                        return</span>
+                }
+        }
+}
+
+func (w *Worker) Stop() <span class="cov0" title="0">{
+        close(w.quit)
+}</span>
+
+func (w *Worker) processRequest(req TaskRequest) TaskResult <span class="cov0" title="0">{
+        switch req.Operation </span>{
+        case "CREATE":<span class="cov0" title="0">
+                // fmt.Println("Worker calls holder to create task", w.id)
+                task := w.taskHolder.CreateTask(req.Task)
+                return TaskResult{Task: task}</span>
+        default:<span class="cov0" title="0">
+                return TaskResult{Error: fmt.Errorf("unknown operation: %s", req.Operation)}</span>
+        }
+}
+
+func NewWorkerPool(numWorkers int, taskHolder *TaskHolder, taskRequests &lt;-chan TaskRequest, taskResponse chan&lt;- TaskResult) WorkerPool <span class="cov0" title="0">{
+        // fmt.Println("Init NewWorkerPool")
+        var workers []Worker
+        for i := 0; i &lt; numWorkers; i++ </span><span class="cov0" title="0">{
+                workers = append(workers, Worker{
+                        id:         i,
+                        taskHolder: taskHolder,
+                        request:    taskRequests,
+                        result:     taskResponse,
+                        quit:       make(chan bool),
+                })
+        }</span>
+        <span class="cov0" title="0">return WorkerPool{ // composite literal
+                workers: workers,
+        }</span>
+}
+
+func (wp *WorkerPool) Start() <span class="cov0" title="0">{
+        for i := range wp.workers </span><span class="cov0" title="0">{
+                go wp.workers[i].Start()
+        }</span>
+}
+
+func (wp *WorkerPool) Close() <span class="cov0" title="0">{
+        for _, worker := range wp.workers </span><span class="cov0" title="0">{
+                worker.Stop()
+        }</span>
+}
+
+func NewConcurrentTaskService(t *TaskHolder) *ConcurrentTaskService <span class="cov0" title="0">{
+        // fmt.Println("Init NewConcurrentTaskService")
+        taskRequests := make(chan TaskRequest)
+        results := make(chan TaskResult)
+        pool := NewWorkerPool(5, t, taskRequests, results)
+        service := &amp;ConcurrentTaskService{
+                TaskHolder:   t,
+                taskRequests: taskRequests,
+                results:      results,
+                workerPool:   pool,
+        }
+        service.workerPool.Start()
+
+        return service
+}</span>
+
+func (t *ConcurrentTaskService) CloseAll() <span class="cov0" title="0">{
+        // close(t.results)
+        close(t.taskRequests)
+
+}</span>
+
+func (t *ConcurrentTaskService) CreateTask(task TaskOptional) *Task <span class="cov0" title="0">{
+        // fmt.Println("Create task pushed on taskrequest channel", task)
+        // t.taskRequests &lt;- TaskRequest{Operation: "CREATE", Task: task}
+        // result := &lt;-t.results
+
+        return t.TaskHolder.CreateTask(task)
+}</span>
+
+func (t *ConcurrentTaskService) Add(task Task) <span class="cov0" title="0">{
+        t.TaskHolder.Add(task)
+}</span>
+
+func (t *ConcurrentTaskService) FindTaskById(taskId int) (*Task, error) <span class="cov0" title="0">{
+        return t.TaskHolder.FindTaskById(taskId)
+}</span>
+
+func (t *ConcurrentTaskService) PartialUpdateTask(taskId int, update *TaskOptional) error <span class="cov0" title="0">{
+        return t.TaskHolder.PartialUpdateTask(taskId, update)
+}</span>
+
+func (t *ConcurrentTaskService) DeleteTask(taskId int) error <span class="cov0" title="0">{
+        return t.TaskHolder.DeleteTask(taskId)
+}</span>
+
+// returns latestId and len of tasks
+func (t *ConcurrentTaskService) Count() (int, int) <span class="cov0" title="0">{
+        return t.TaskHolder.Count()
+}</span>
+
+func (t *ConcurrentTaskService) Read() []Task <span class="cov0" title="0">{
+        return t.TaskHolder.Read()
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package internal
+
+import (
         "bytes"
         "io"
         "os"
@@ -1254,7 +1428,7 @@ import (
         "time"
 )
 
-var MockTime = time.Date(2023, 7, 23, 12, 0, 0, 0, time.UTC)
+var MockTime = time.Date(2023, 7, 23, 12, 0, 0, 0, time.UTC).Truncate(0)
 
 func ProvideMocktimeNow(t *testing.T) func() time.Time <span class="cov8" title="1">{
         originalTimeNow := timeNow
@@ -1272,7 +1446,7 @@ func ProvideTask(t *testing.T) Task <span class="cov8" title="1">{
 
 func ProvideTaskHolder() *TaskHolder <span class="cov8" title="1">{
         th := NewTaskHolder("resources/cli_disk_test.json")
-        updt := &amp;TaskOptional{
+        updt := TaskOptional{
                 nil,
                 StringPtr("Initial Task"),
                 CategoryPtr(Brewing),
@@ -1285,7 +1459,7 @@ func ProvideTaskHolder() *TaskHolder <span class="cov8" title="1">{
 
 func ProvideTaskHolderWithPath(path string) *TaskHolder <span class="cov8" title="1">{
         th := NewTaskHolder(path)
-        updt := &amp;TaskOptional{
+        updt := TaskOptional{
                 nil,
                 StringPtr("Initial Task"),
                 CategoryPtr(Brewing),
@@ -1297,7 +1471,7 @@ func ProvideTaskHolderWithPath(path string) *TaskHolder <span class="cov8" title
 func MockNewTaskHolder(diskPath string) *TaskHolder <span class="cov8" title="1">{
 
         th := NewTaskHolder("resources/cli_disk_test.json")
-        updt := &amp;TaskOptional{
+        updt := TaskOptional{
                 nil,
                 StringPtr("Initial Task"),
                 CategoryPtr(Brewing),
@@ -1351,7 +1525,7 @@ func CaptureStdin() (oldStdin *os.File, read *os.File, write *os.File) <span cla
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package internal
+		<pre class="file" id="file9" style="display: none">package internal
 
 import (
         "embed"
@@ -1392,24 +1566,24 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 var category TaskCategory
                 x := rand.Intn(5)
                 switch x </span>{
-                case 0:<span class="cov8" title="1">
+                case 0:<span class="cov0" title="0">
                         verb := brewingVerbs[rand.Intn(len(brewingVerbs))]
                         adj := adjectives[rand.Intn(len(adjectives))]
                         noun := beerTypes[rand.Intn(len(beerTypes))]
                         taskValue = strings.Join([]string{verb, adj, noun}, " ")
                         category = Brewing</span>
-                case 1:<span class="cov0" title="0">
+                case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 verb = "Order"
                         }</span>
-                        <span class="cov0" title="0">ingredient := ingredients[rand.Intn(len(ingredients))]
+                        <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 unit = "lbs"
                         }</span>
-                        <span class="cov0" title="0">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
+                        <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
                 case 2:<span class="cov8" title="1">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
@@ -1417,7 +1591,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 case 3:<span class="cov8" title="1">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
-                case 4:<span class="cov8" title="1">
+                case 4:<span class="cov0" title="0">
                         taskValue = qualityTasks[rand.Intn(len(qualityTasks))]
                         category = Quality</span>
 
@@ -1458,7 +1632,7 @@ func BoolPtr(b bool) *bool <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package logger
+		<pre class="file" id="file10" style="display: none">package logger
 
 import (
         "log"
@@ -1479,7 +1653,7 @@ func init() <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package view
+		<pre class="file" id="file11" style="display: none">package view
 
 import (
         "embed"

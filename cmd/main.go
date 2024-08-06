@@ -27,11 +27,12 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server h
 	if err != nil {
 		logger.Error.Printf("error starting view renderer")
 	}
+	taskConcurrentService := internal.NewConcurrentTaskService(taskHolder)
+	taskRenderHandler := handlers.NewTaskRenderHandler(taskHolder, renderer)
 
-	taskHandler := handlers.NewTaskHandler(taskHolder, renderer)
-	api := handlers.NewApiService(taskHolder)
+	api := handlers.NewApiService(taskConcurrentService)
 
-	go startHTTPServer(taskHandler, server, api)
+	go startHTTPServer(taskRenderHandler, server, api)
 
 	returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
 	time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine

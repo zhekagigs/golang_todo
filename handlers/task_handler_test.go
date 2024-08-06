@@ -20,7 +20,7 @@ func (m *mockTaskHolder) Read() []internal.Task {
 	return m.tasks
 }
 
-func (m *mockTaskHolder) CreateTask(task *internal.TaskOptional) *internal.Task {
+func (m *mockTaskHolder) CreateTask(task internal.TaskOptional) *internal.Task {
 	newTask := &internal.Task{
 		Id:        len(m.tasks) + 1,
 		Msg:       *task.Msg,
@@ -101,7 +101,7 @@ func TestHandleTaskListRead(t *testing.T) {
 		},
 	}
 	mockRenderer := &mockRenderer{}
-	handler := NewTaskHandler(mockService, mockRenderer)
+	handler := NewTaskRenderHandler(mockService, mockRenderer)
 
 	req, err := http.NewRequest("GET", "/tasks", nil)
 	if err != nil {
@@ -123,7 +123,7 @@ func TestHandleTaskListRead(t *testing.T) {
 func TestHandleTaskCreate(t *testing.T) {
 	mockService := &mockTaskHolder{}
 	mockRenderer := &mockRenderer{}
-	handler := NewTaskHandler(mockService, mockRenderer)
+	handler := NewTaskRenderHandler(mockService, mockRenderer)
 
 	t.Run("GET request", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/tasks/create", nil)
@@ -175,7 +175,7 @@ func TestHandleTaskUpdate(t *testing.T) {
 		},
 	}
 	mockRenderer := &mockRenderer{}
-	handler := NewTaskHandler(mockService, mockRenderer)
+	handler := NewTaskRenderHandler(mockService, mockRenderer)
 
 	t.Run("GET request", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/tasks/update?id=1", nil)
@@ -228,7 +228,7 @@ func TestHandleTaskDelete(t *testing.T) {
 		},
 	}
 	mockRenderer := &mockRenderer{}
-	handler := NewTaskHandler(mockService, mockRenderer)
+	handler := NewTaskRenderHandler(mockService, mockRenderer)
 
 	req, err := http.NewRequest("DELETE", "/tasks/delete?id=1", nil)
 	if err != nil {

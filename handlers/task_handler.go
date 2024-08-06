@@ -12,7 +12,7 @@ import (
 )
 
 type TaskRenderHandler struct {
-	service  internal.TaskService
+	service  internal.TaskServiceInterface
 	renderer view.Renderer
 }
 
@@ -42,7 +42,7 @@ func getTaskIdFromQuery(r *http.Request) (int, error) {
 	return strconv.Atoi(taskIDStr)
 }
 
-func NewTaskHandler(service internal.TaskService, renderer view.Renderer) *TaskRenderHandler {
+func NewTaskRenderHandler(service internal.TaskServiceInterface, renderer view.Renderer) *TaskRenderHandler {
 	return &TaskRenderHandler{service: service, renderer: renderer}
 }
 
@@ -61,7 +61,7 @@ func (h *TaskRenderHandler) HandleTaskListRead(w http.ResponseWriter, r *http.Re
 }
 
 func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
-	logger.Info.Printf("Handling %s request for task creation from %s", r.Method, r.RemoteAddr)
+	// logger.Info.Printf("Handling %s request for task creation from %s", r.Method, r.RemoteAddr)
 	switch r.Method {
 	case http.MethodGet:
 		err := h.renderer.RenderCreateForm(w)
@@ -75,7 +75,7 @@ func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		task := h.service.CreateTask(taskOptional)
+		task := h.service.CreateTask(*taskOptional)
 
 		if task == nil {
 			logger.Error.Println("Failed to create task")
@@ -136,7 +136,7 @@ func (h *TaskRenderHandler) handlePostTaskUpdate(w http.ResponseWriter, r *http.
 }
 
 func (h *TaskRenderHandler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
-	logger.Info.Printf("Handling %s request for task deletion from %s", r.Method, r.RemoteAddr)
+	// logger.Info.Printf("Handling %s request for task deletion from %s", r.Method, r.RemoteAddr)
 	if r.Method != http.MethodDelete {
 		logger.Error.Printf("Method not allowed: %s", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -148,12 +148,12 @@ func (h *TaskRenderHandler) HandleTaskDelete(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	logger.Info.Printf("Successfully deleted task with ID: %d", taskID)
+	// logger.Info.Printf("Successfully deleted task with ID: %d", taskID)
 	w.WriteHeader(http.StatusOK)
 }
 
 func ExtractFormValues(r *http.Request) (*internal.TaskOptional, error) {
-	logger.Info.Println("Extracting form values")
+	// logger.Info.Println("Extracting form values")
 
 	var errs []error
 	addErr := func(err error, msg string) {

@@ -310,7 +310,7 @@ func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error {
 	if err == nil {
 		plannedParsedAt = parsedTime
 	}
-	updt := &in.TaskOptional{
+	updt := in.TaskOptional{
 		Done:      nil,
 		Msg:       in.StringPtr(taskValue),
 		Category:  in.CategoryPtr(in.TaskCategory(categoryNum)),

@@ -16,14 +16,18 @@ import (
 func setupConfig(t *testing.T) (*httptest.Server, *internal.TaskHolder) {
 	// Setup
 	taskHolder := internal.NewTaskHolder("resources/concurrent_disk.json")
-	t.Logf("loaded %d", len(taskHolder.Tasks))
-	apiService := NewApiService(taskHolder)
+	// taskChan := make(chan internal.Task)
+	// optionalsChan := make(chan internal.TaskOptional)
+	taskService := internal.NewConcurrentTaskService(taskHolder)
+	t.Logf("loaded %d Tasks", len(taskHolder.Tasks))
+	apiService := NewApiService(taskService)
 
 	// Create a test server
 
 	server := httptest.NewServer(http.HandlerFunc(apiService.CreateTask))
 	t.Cleanup(func() {
 		internal.WriteToJson(taskHolder.DiskPath, taskHolder.Tasks...)
+		taskService.CloseAll()
 		server.Close()
 	})
 
@@ -93,10 +97,10 @@ func TestManyCreateTaskIntegrationSequentially(t *testing.T) {
 }
 
 func TestMultipleClientsPostRequest(t *testing.T) {
-	t.Skip("fails on purpose")
+	// t.Skip("fails on purpose")
 	server, taskHolder := setupConfig(t)
 	numClients := 100
-	numRequestsPerClient := 10
+	numRequestsPerClient := 30
 
 	var wg sync.WaitGroup
 	results := make(chan string, numClients*numRequestsPerClient)
@@ -107,16 +111,25 @@ func TestMultipleClientsPostRequest(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < numRequestsPerClient; j++ {
 				tasks := internal.GenerateRandomTasks(1)
-				payload, _ := provideJsonBody(internal.AdapterTaskOptional(tasks[0]))
+				taskOptional := internal.AdapterTaskOptional(tasks[0])
+				payload, err := provideJsonBody(taskOptional)
+				if err != nil {
+					t.Errorf("error marshalling task to json")
+				}
 
-				resp, _ := postRequest(server.URL, payload)
-
+				resp, err := postRequest(server.URL, payload)
+				if err != nil {
+					t.Errorf("error posting task to server %q", err)
+					panic(err)
+				}
 				if resp.StatusCode != http.StatusCreated {
 					results <- fmt.Sprintf("Client %d, Request %d: Expected status Created, got %v", clientID, j, resp.Status)
 				}
-				//  else {
-				// 	results <- fmt.Sprintf("Client %d, Request %d: Success", clientID, j)
-				// }
+				// Parse response body
+				createdTask := parseResponse(resp, t)
+
+				// Verify the created task
+				assertTaskFields(createdTask, taskOptional, t)
 			}
 		}(i)
 	}
@@ -138,43 +151,6 @@ func TestMultipleClientsPostRequest(t *testing.T) {
 	if total != numClients*numRequestsPerClient {
 		t.Errorf("Expected %d tasks, got %d", numClients*numRequestsPerClient, total)
 	}
-}
-
-func TestManyCreateTaskIntegrationConcurrently(t *testing.T) {
-	t.Skip("Not finished")
-	t.Log("Starting TestManyCreateTaskIntegration")
-	NUM := 50000
-	server, taskHolder := setupConfig(t)
-	tasks := internal.GenerateRandomTasks(NUM)
-	taskCh := make(chan internal.Task, 100)
-	// Send request -- caller code
-	// Check response status
-	for i := 0; i < 100; i++ {
-		go client(server.URL, taskCh)
-	}
-	for _, task := range tasks {
-		taskCh <- task
-	}
-	close(taskCh)
-
-	// // Parse response body
-	// createdTask := parseResponse(resp, t)
-
-	// // Verify the created task
-	// assertTaskFields(createdTask, testTask, t)
-
-	// // Verify task was actually added to the TaskHolder
-	// verifyTaskInHolder(taskHolder, createdTask, t)
-
-	latestid, total := taskHolder.Count()
-	t.Logf("taskHolder: latestId:%d total:%d\n", latestid, total)
-	if latestid != NUM {
-		t.Errorf("want %d, got %d", NUM, latestid)
-	}
-	if total != NUM {
-		t.Errorf("want %d, got %d", NUM, total)
-	}
-	// if taskHolder.
 }
 
 func client(serverAddr string, taskCh <-chan internal.Task) {
