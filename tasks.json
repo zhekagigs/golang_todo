@@ -1,82 +1,26 @@
 [
   {
-    "Id": 0,
-    "Task": "Organize tasting event",
-    "Category": 1,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793499+01:00",
-    "PlannedAt": "2024-08-17T15:52:29.793498+01:00"
-  },
-  {
     "Id": 1,
-    "Task": "Bottle Hazy Lager",
+    "Msg": "Brew",
     "Category": 0,
     "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793499+01:00",
-    "PlannedAt": "2024-08-15T23:52:29.793499+01:00"
+    "CreatedAt": "2024-08-08T09:19:48.509026+01:00",
+    "PlannedAt": "2024-07-14T12:45:00+01:00",
+    "CreatedBy": {
+      "userName": "Admin",
+      "userId": "00a1c791-f200-42b0-b7e3-2eddb2afcc7a"
+    }
   },
   {
     "Id": 2,
-    "Task": "Inventory check",
-    "Category": 2,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793499+01:00",
-    "PlannedAt": "2024-07-30T06:52:29.793499+01:00"
-  },
-  {
-    "Id": 3,
-    "Task": "Process 330 lbs of Coffee beans",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793502+01:00",
-    "PlannedAt": "2024-08-01T14:52:29.793502+01:00"
-  },
-  {
-    "Id": 4,
-    "Task": "Conduct customer survey",
+    "Msg": "Advertise",
     "Category": 1,
     "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793502+01:00",
-    "PlannedAt": "2024-08-19T10:52:29.793502+01:00"
-  },
-  {
-    "Id": 5,
-    "Task": "Negotiate with suppliers",
-    "Category": 2,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793502+01:00",
-    "PlannedAt": "2024-08-14T13:52:29.793502+01:00"
-  },
-  {
-    "Id": 6,
-    "Task": "Bottle Funky Porter",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793502+01:00",
-    "PlannedAt": "2024-08-08T17:52:29.793502+01:00"
-  },
-  {
-    "Id": 7,
-    "Task": "Process 296 kg of Cocoa nibs",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793503+01:00",
-    "PlannedAt": "2024-08-16T04:52:29.793503+01:00"
-  },
-  {
-    "Id": 8,
-    "Task": "Develop brand partnership",
-    "Category": 1,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793503+01:00",
-    "PlannedAt": "2024-08-01T01:52:29.793503+01:00"
-  },
-  {
-    "Id": 9,
-    "Task": "Bottle Experimental Seasonal Batch",
-    "Category": 0,
-    "Done": false,
-    "CreatedAt": "2024-07-23T15:52:29.793503+01:00",
-    "PlannedAt": "2024-08-04T15:52:29.793503+01:00"
+    "CreatedAt": "2024-08-08T09:19:48.509026+01:00",
+    "PlannedAt": "2024-07-14T12:45:00+01:00",
+    "CreatedBy": {
+      "userName": "Admin",
+      "userId": "00a1c791-f200-42b0-b7e3-2eddb2afcc7a"
+    }
   }
 ]
