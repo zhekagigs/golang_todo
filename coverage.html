@@ -75,7 +75,7 @@
 				
 				<option value="file9">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
 				
-				<option value="file10">github.com/zhekagigs/golang_todo/internal/utils.go (86.5%)</option>
+				<option value="file10">github.com/zhekagigs/golang_todo/internal/utils.go (84.6%)</option>
 				
 				<option value="file11">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
 				
@@ -1643,7 +1643,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         category = Brewing</span>
                 case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 verb = "Order"
                         }</span>
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
@@ -1654,10 +1654,10 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
-                case 2:<span class="cov8" title="1">
+                case 2:<span class="cov0" title="0">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
                         category = Marketing</span>
-                case 3:<span class="cov0" title="0">
+                case 3:<span class="cov8" title="1">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
                 case 4:<span class="cov8" title="1">
