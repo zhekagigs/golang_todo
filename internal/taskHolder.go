@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/zhekagigs/golang_todo/users"
 )
 
 const (
@@ -19,6 +21,7 @@ type TaskOptional struct {
 	Msg       *string       `json:"msg"`
 	Category  *TaskCategory `json:"category"`
 	PlannedAt *CustomTime   `json:"plannedAt"`
+	CreatedBy *users.User   `json:"createdBy"`
 	// trackerId uuid.UUID
 }
 
@@ -134,12 +137,13 @@ func (t *TaskHolder) CreateTask(update TaskOptional) *Task {
 		plannedAt = update.PlannedAt.Time
 	}
 
-	task := NewTask(t.latestId, msg, category, plannedAt)
+	task := NewTask(t.latestId, msg, category, plannedAt, update.CreatedBy)
 	t.Tasks = append(t.Tasks, task)
 	return &task
 }
 
 func (t *TaskHolder) FindTaskById(taskId int) (*Task, error) {
+
 	for i := range t.Tasks {
 		if t.Tasks[i].Id == taskId {
 			return &t.Tasks[i], nil
@@ -207,6 +211,16 @@ func (t *TaskHolder) DeleteTask(taskId int) error {
 	t.Tasks = append(t.Tasks[:index], t.Tasks[index+1:]...)
 
 	return nil
+}
+
+func (t *TaskHolder) SearchTaskByWord(word string) ([]Task, error) {
+	var matches []Task
+	for _, task := range t.Tasks {
+		if strings.Contains(task.Msg, word) {
+			matches = append(matches, task)
+		}
+	}
+	return matches, nil
 }
 
 func isValidTaskCategory(category TaskCategory) bool {

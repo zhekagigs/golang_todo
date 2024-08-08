@@ -70,7 +70,7 @@ func GenerateRandomTasks(count int) []Task {
 
 		}
 		plannedAt := time.Now().Add(time.Duration(rand.Intn(24*30)) * time.Hour)
-		newTask := NewTask(i, taskValue, category, plannedAt)
+		newTask := NewTask(i, taskValue, category, plannedAt, ProvideMockUser())
 		tasks[i] = newTask
 	}
 	return tasks

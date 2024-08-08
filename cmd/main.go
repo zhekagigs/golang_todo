@@ -1,23 +1,27 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/zhekagigs/golang_todo/cli"
-	"github.com/zhekagigs/golang_todo/handlers"
+	"github.com/zhekagigs/golang_todo/controller"
 	"github.com/zhekagigs/golang_todo/internal"
 	"github.com/zhekagigs/golang_todo/logger"
+	mid "github.com/zhekagigs/golang_todo/middleware"
+	"github.com/zhekagigs/golang_todo/users"
 	"github.com/zhekagigs/golang_todo/view"
 )
 
 func main() {
-	os.Exit(RealMain(internal.NewTaskHolder, &handlers.RealHTTPServer{}, &cli.RealCLIApp{}))
+	os.Exit(RealMain(internal.NewTaskHolder, &controller.RealHTTPServer{}, &cli.RealCLIApp{}))
 }
 
-func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server handlers.HTTPServer, cliApp cli.CLIApp) int {
+func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server controller.HTTPServer, cliApp cli.CLIApp) int {
+	// ctx := context.Background()
 	taskHolder, checkExit, exitCode := cliApp.AppStarter(newTaskHolder)
 	if checkExit {
 		return exitCode
@@ -28,75 +32,45 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server h
 		logger.Error.Printf("error starting view renderer")
 	}
 	taskConcurrentService := internal.NewConcurrentTaskService(taskHolder)
-	taskRenderHandler := handlers.NewTaskRenderHandler(taskHolder, renderer)
+	taskRenderHandler := controller.NewTaskRenderHandler(taskHolder, renderer)
+	userStore, err := users.NewUserStore("users.json")
 
-	api := handlers.NewApiService(taskConcurrentService)
-
-	go startHTTPServer(taskRenderHandler, server, api)
+	api := controller.NewApiService(taskConcurrentService, userStore)
+	if err != nil {
+		logger.Error.Printf("error loading user store file")
+		return cli.ExitCodeError
+	}
+	authHandler := controller.NewAuthHandler(userStore)
+	go startHTTPServer(taskRenderHandler, server, api, authHandler)
 
 	returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
 	time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
 	return returnCode
 }
 
-func startHTTPServer(taskHandler *handlers.TaskRenderHandler, server handlers.HTTPServer, api *handlers.ApiService) {
+func startHTTPServer(taskHandler *controller.TaskRenderHandler, server controller.HTTPServer, api *controller.ApiService, authHandler *controller.AuthHandler) {
 
 	router := http.NewServeMux()
+
 	router.Handle("/api/", api) //why?
-	router.HandleFunc("GET /api/tasks", api.GetAllPosts)
-	router.HandleFunc("GET /api/tasks/{id}", api.GetTaskById)
-	router.HandleFunc("POST /api/tasks", api.CreateTask)
+	router.HandleFunc("GET /api/tasks", (api.GetAllPosts))
+	router.HandleFunc("GET /api/tasks/{id}", (api.GetTaskById))
+	router.HandleFunc("POST /api/tasks", mid.AuthMiddleware(api.CreateTask))
+	router.HandleFunc("PUT /api/tasks/{id}", mid.AuthMiddleware(api.UpdateTask))
+	router.HandleFunc("DELETE /api/tasks/{id}", mid.AuthMiddleware(api.DeleteTask))
 
-	http.HandleFunc("/tasks", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
-		switch r.Method {
-		case http.MethodGet:
-			taskHandler.HandleTaskListRead(w, r)
-		case http.MethodDelete:
-			taskHandler.HandleTaskDelete(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	router.HandleFunc("POST /login", (authHandler.LoginHandler))
+	router.HandleFunc("/logout", authHandler.LogoutHandler)
+	router.HandleFunc("GET /tasks/create", (mid.AuthMiddleware(taskHandler.HandleTaskCreate)))
+	router.HandleFunc("GET /tasks", (taskHandler.HandleTaskListRead))
+	router.HandleFunc("DELETE /tasks", (mid.AuthMiddleware(taskHandler.HandleTaskDelete)))
+	router.HandleFunc("/tasks/update", (mid.AuthMiddleware(taskHandler.HandleTaskUpdate)))
 
-	http.HandleFunc("/tasks/update", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
-		taskHandler.HandleTaskUpdate(w, r)
-	})
+	loggingHandler := mid.LoggingMiddleware{Next: router}
 
-	http.HandleFunc("/tasks/create", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info.Printf("Method: %s, URL: %s", r.Method, r.URL.Path)
-		taskHandler.HandleTaskCreate(w, r)
-	})
-
-	log.Println("Starting server on :8080")
-	if err := server.ListenAndServe(":8080", router); err != nil {
+	logger.Info.Println("Starting server on :8080")
+	if err := server.ListenAndServe(":8080", loggingHandler); err != nil {
 		logger.Error.Fatalf("Failed to start server: %v", err)
 	}
-}
-
-func logMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Create a custom response writer to capture the status code
-		crw := &customResponseWriter{ResponseWriter: w}
-
-		next.ServeHTTP(crw, r)
-
-		duration := time.Since(start)
-
-		log.Printf(
-			"Method: %s, Path: %s, Status: %d, Duration: %v",
-			r.Method,
-			r.URL.Path,
-			crw.status,
-			duration,
-		)
-	}
-}
-
-type customResponseWriter struct {
-	http.ResponseWriter
-	status int
+	// defer server.Shutdown()
 }

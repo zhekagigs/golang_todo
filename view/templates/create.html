@@ -7,14 +7,14 @@
 </head>
 <body>
     <h1>Create New Task</h1>
-    <form action="/tasks/create" method="POST">
+    <form id="createTaskForm">
         <div>
-            <label for="msg">Task Description:</label>
-            <input type="text" id="msg" name="msg" required>
+            <label for="taskDescription">Task Description:</label>
+            <input type="text" id="taskDescription" name="msg" required>
         </div>
         <div>
             <label for="category">Category:</label>
-            <select id="category" name="category">
+            <select id="category" name="category" required>
                 <option value="0">Brewing</option>
                 <option value="1">Marketing</option>
                 <option value="2">Logistics</option>
@@ -23,9 +23,53 @@
         </div>
         <div>
             <label for="plannedAt">Planned At:</label>
-            <input type="datetime-local" id="plannedAt" name="plannedAt" required>
+            <input type="datetime-local" id="plannedAt" name="plannedAt">
         </div>
         <button type="submit">Create Task</button>
     </form>
+
+    <script>
+    document.getElementById('createTaskForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const jsonData = {
+            msg: formData.get('msg'),
+            category: parseInt(formData.get('category')),
+            plannedAt: formData.get('plannedAt') ? new Date(formData.get('plannedAt')).toISOString() : null
+            // createdBy: getCookie('identity') //
+        };
+
+        fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': getCookie('Authorization')
+            },
+            body: JSON.stringify(jsonData),
+            credentials: 'include'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Task created:', data);
+            window.location.href = '/tasks';  // Redirect to task list
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('Failed to create task. Please try again.');
+        });
+    });
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    </script>
 </body>
 </html>

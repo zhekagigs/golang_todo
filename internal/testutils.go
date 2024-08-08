@@ -6,9 +6,20 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/zhekagigs/golang_todo/users"
 )
 
 var MockTime = time.Date(2023, 7, 23, 12, 0, 0, 0, time.UTC).Truncate(0)
+
+func ProvideMockUserID() uuid.UUID {
+	mockUserId, err := uuid.Parse("00a1c791-f200-42b0-b7e3-2eddb2afcc7a")
+	if err != nil {
+		panic(err)
+	}
+	return mockUserId
+}
 
 func ProvideMocktimeNow(t *testing.T) func() time.Time {
 	originalTimeNow := timeNow
@@ -20,8 +31,12 @@ func ProvideMocktimeNow(t *testing.T) func() time.Time {
 	}
 }
 
+func ProvideMockUser() *users.User {
+	return &users.User{UserName: "Admin", UserId: ProvideMockUserID()}
+}
+
 func ProvideTask(t *testing.T) Task {
-	return NewTask(1, "task_my_task", 1, MockTime)
+	return NewTask(1, "task_my_task", 1, MockTime, ProvideMockUser())
 }
 
 func ProvideTaskHolder() *TaskHolder {
@@ -31,6 +46,7 @@ func ProvideTaskHolder() *TaskHolder {
 		StringPtr("Initial Task"),
 		CategoryPtr(Brewing),
 		TimePtr(time.Now().Add(24 * time.Hour)),
+		ProvideMockUser(),
 	}
 
 	th.CreateTask(updt)
@@ -44,6 +60,7 @@ func ProvideTaskHolderWithPath(path string) *TaskHolder {
 		StringPtr("Initial Task"),
 		CategoryPtr(Brewing),
 		TimePtr(time.Now().Add(24 * time.Hour)),
+		ProvideMockUser(),
 	}
 	th.CreateTask(updt)
 	return th
@@ -56,6 +73,7 @@ func MockNewTaskHolder(diskPath string) *TaskHolder {
 		StringPtr("Initial Task"),
 		CategoryPtr(Brewing),
 		TimePtr(time.Now().Add(24 * time.Hour)),
+		ProvideMockUser(),
 	}
 	th.CreateTask(updt)
 	return th

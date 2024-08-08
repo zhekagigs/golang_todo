@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/zhekagigs/golang_todo/users"
 )
 
 const TASK_TIME_FORMAT = "2006-01-02 15:04"
@@ -62,9 +64,13 @@ type Task struct {
 	Done      bool
 	CreatedAt time.Time
 	PlannedAt time.Time
+	CreatedBy users.User
 }
 
-func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Task {
+func NewTask(id int, task string, category TaskCategory, plannedAt time.Time, user *users.User) Task {
+	if user == nil {
+		user = &users.User{UserName: "Team"}
+	}
 	return Task{
 		Id:        id,
 		Msg:       task,
@@ -72,11 +78,23 @@ func NewTask(id int, task string, category TaskCategory, plannedAt time.Time) Ta
 		Done:      false,
 		CreatedAt: timeNow().Round(0),
 		PlannedAt: plannedAt.Round(0),
+		CreatedBy: *user,
 	}
 }
 
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorBlue   = "\033[34m"
+	colorPurple = "\033[35m"
+	colorCyan   = "\033[36m"
+	colorWhite  = "\033[37m"
+)
+
 func (t *Task) String() string {
-	return fmt.Sprintf("id:%d,[%s] %s, created: %s, planned: %s, finished: %v",
+	return fmt.Sprintf("id:"+colorPurple+"%d,"+colorReset+colorBlue+"[%s] "+colorReset+colorCyan+"%s,"+colorReset+"\ncreated: %s,\nplanned: %s, \nfinished: %v",
 		t.Id,
 		t.Category.String(),
 		t.Msg,
@@ -87,7 +105,7 @@ func (t *Task) String() string {
 
 func PrintTasks(out io.Writer, tasks ...Task) {
 	for _, task := range tasks {
-		fmt.Fprintln(out, task.String())
+		fmt.Fprintln(out, task.String()+"\n")
 	}
 }
 

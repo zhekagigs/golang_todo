@@ -4,6 +4,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestProvideMocktimeNow(t *testing.T) {
@@ -18,7 +19,8 @@ func TestProvideMocktimeNow(t *testing.T) {
 
 func TestProvideTask(t *testing.T) {
 	got := ProvideTask(t)
-	want := NewTask(1, "task_my_task", 1, MockTime)
+	got.PlannedAt.Truncate(time.Millisecond)
+	want := NewTask(1, "task_my_task", 1, MockTime.Truncate(time.Millisecond), ProvideMockUser())
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ProvideTask() = %v, want %v", got, want)
 	}

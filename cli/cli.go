@@ -13,14 +13,16 @@ import (
 	in "github.com/zhekagigs/golang_todo/internal"
 )
 
-type commands string
+type command string
 
 const (
-	READ   commands = "read"
-	CREATE commands = "create"
-	UPDATE commands = "update"
-	DELETE commands = "delete"
-	EXIT   commands = "exit"
+	READ   command = "read"
+	FIND   command = "find"
+	SEARCH command = "search"
+	CREATE command = "create"
+	UPDATE command = "update"
+	DELETE command = "delete"
+	EXIT   command = "exit"
 )
 
 const (
@@ -40,13 +42,13 @@ func (cli *RealCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		displayCommands()
-		cmd, taskId, err := parseCommand(reader)
+		cmd, taskId, word, err := parseCommand(reader)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 
-		if exitCode := executeCommand(cmd, taskId, taskHolder, reader); exitCode != -1 {
+		if exitCode := executeCommand(cmd, taskId, word, taskHolder, reader); exitCode != -1 {
 			return exitCode
 		}
 	}
@@ -131,36 +133,45 @@ func PrintHelp() {
 }
 
 func displayCommands() {
-	fmt.Println("\nAvailable Commands: read, create, update, delete, exit")
-	fmt.Print("Enter Command: ")
+	fmt.Println("\nAvailable Commands: read, create, update, delete, exit, search, find")
+	fmt.Println("Enter Command: ")
 }
 
-func parseCommand(reader *bufio.Reader) (commands, int, error) {
+func parseCommand(reader *bufio.Reader) (command, int, string, error) {
 	cmdString, _ := reader.ReadString('\n')
 	parts := strings.Fields(cmdString)
 	if len(parts) == 0 {
-		return "", 0, fmt.Errorf("Please enter a command.")
+		return "", -1, "", fmt.Errorf("Please enter a command.")
 	}
 
-	cmd := commands(strings.TrimSpace(strings.ToLower(parts[0])))
+	cmd := command(strings.TrimSpace(strings.ToLower(parts[0])))
 
 	var taskId int
+	var word string = ""
 	var err error
-	if len(parts) > 1 && (cmd == UPDATE || cmd == DELETE) {
+
+	if len(parts) > 1 && (cmd == UPDATE || cmd == DELETE || cmd == FIND) {
 		taskId, err = strconv.Atoi(parts[1])
 		if err != nil {
-			return "", 0, fmt.Errorf("Invalid task ID. Please enter a number.")
+			return "", -1, "", fmt.Errorf("Invalid task ID. Please enter a number.")
 		}
+		return cmd, taskId, word, nil
+	} else if len(parts) > 1 && (cmd == SEARCH) {
+		word = parts[1]
 	}
 
-	return cmd, taskId, nil
+	return cmd, taskId, word, nil
 }
 
-func executeCommand(cmd commands, taskId int, taskHolder *in.TaskHolder, reader *bufio.Reader) int {
+func executeCommand(cmd command, taskId int, word string, taskHolder *in.TaskHolder, reader *bufio.Reader) int {
 	var err error
 	switch cmd {
 	case READ:
-		readTasks(taskHolder)
+		err = readTasks(taskHolder)
+	case FIND:
+		err = findTaskById(taskHolder, taskId)
+	case SEARCH:
+		err = searchTaskByWord(taskHolder, word)
 	case CREATE:
 		err = createTask(taskHolder, reader)
 	case UPDATE:
@@ -178,6 +189,27 @@ func executeCommand(cmd commands, taskId int, taskHolder *in.TaskHolder, reader 
 	}
 
 	return -1 // Continue the loop
+}
+
+func searchTaskByWord(taskHolder *in.TaskHolder, word string) error {
+	tasks, err := taskHolder.SearchTaskByWord(word)
+	if err != nil {
+		return err
+	}
+
+	in.PrintTasks(os.Stdout, tasks...)
+	fmt.Printf("\nFound %d tasks\n", len(tasks))
+	return nil
+}
+
+func findTaskById(taskHolder *in.TaskHolder, taskId int) error {
+
+	task, err := taskHolder.FindTaskById(taskId)
+	if err != nil {
+		return err
+	}
+	fmt.Println(task.String() + "\n")
+	return nil
 }
 
 func exitApp(taskHolder *in.TaskHolder) int {
@@ -207,12 +239,10 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 
 	// Update task status
 	var donePtr *bool
-	fmt.Print("Update task status? (y/n): ")
-	updateStatus, _ := reader.ReadString('\n')
-	if strings.ToLower(strings.TrimSpace(updateStatus)) == "y" {
-		fmt.Print("Is the task done? (true/false): ")
-		doneStr, _ := reader.ReadString('\n')
-		doneStr = strings.TrimSpace(doneStr)
+	fmt.Print("Is task doen(true/false)? (or press Enter to skip): ")
+	doneStr, _ := reader.ReadString('\n')
+	doneStr = strings.TrimSpace(doneStr)
+	if len(doneStr) == 4 || len(doneStr) == 5 {
 		if parsedDone, err := strconv.ParseBool(doneStr); err == nil {
 			donePtr = &parsedDone
 		} else {
@@ -224,15 +254,18 @@ func updateTask(taskHolder *in.TaskHolder, taskId int, reader *bufio.Reader) err
 	var category in.TaskCategory
 	var categoryPtr *in.TaskCategory
 	fmt.Print("Update task category? (y/n): ")
-	updateCategory, _ := reader.ReadString('\n')
-	if strings.ToLower(strings.TrimSpace(updateCategory)) == "y" {
-		fmt.Println("Available categories:")
-		fmt.Println("0: Brewing")
-		fmt.Println("1: Marketing")
-		fmt.Println("2: Logistics")
-		fmt.Println("3: Quality")
-		fmt.Print("Enter new category (0-3): ")
-		categoryStr, _ := reader.ReadString('\n')
+	// if strings.ToLower(strings.TrimSpace(updateCategory)) == "y" {
+	fmt.Println("Available categories:")
+	fmt.Println("0: Brewing")
+	fmt.Println("1: Marketing")
+	fmt.Println("2: Logistics")
+	fmt.Println("3: Quality")
+	fmt.Print("Enter new category (0-3)(or press Enter to skip): ")
+	categoryStr, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	if len(categoryStr) > 0 {
 		if parsedCategory, err := strconv.Atoi(strings.TrimSpace(categoryStr)); err == nil && parsedCategory >= 0 && parsedCategory <= 3 {
 			category = in.TaskCategory(parsedCategory)
 			categoryPtr = &category
@@ -300,7 +333,7 @@ func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error {
 
 	taskValue := lines[0]
 	categoryNum, err := strconv.Atoi(strings.TrimSpace(lines[1]))
-	fmt.Println(categoryNum)
+	// fmt.Println(categoryNum)
 	if err != nil {
 		return err
 	}
@@ -321,13 +354,14 @@ func createTask(taskHolder *in.TaskHolder, reader *bufio.Reader) error {
 	return nil
 }
 
-func readTasks(taskHolder *in.TaskHolder) {
+func readTasks(taskHolder *in.TaskHolder) error {
 	all_tasks := taskHolder.Read()
 	if len(all_tasks) == 0 {
 		fmt.Println("No tasks found.")
-		return
+		return errors.New("No tasks found")
 	}
 
 	fmt.Printf("\nList of tasks:\n\n")
 	in.PrintTasks(os.Stdout, all_tasks...)
+	return nil
 }

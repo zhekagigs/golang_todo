@@ -66,6 +66,7 @@ func TestCreateTask(t *testing.T) {
 		StringPtr(taskValue),
 		CategoryPtr(category),
 		TimePtr(plannedAt),
+		ProvideMockUser(),
 	}
 	task := th.CreateTask(updt)
 
@@ -106,6 +107,7 @@ func TestFindTaskById(t *testing.T) {
 		StringPtr(taskValue),
 		CategoryPtr(category),
 		TimePtr(plannedAt),
+		ProvideMockUser(),
 	}
 	task1 := th.CreateTask(updt)
 	updt.Msg = StringPtr("Task 2")
@@ -147,6 +149,7 @@ func TestPartialUpdateTask(t *testing.T) {
 			StringPtr(taskValue),
 			CategoryPtr(category),
 			TimePtr(plannedAt),
+			ProvideMockUser(),
 		}
 		initialTask := th.CreateTask(updt)
 
