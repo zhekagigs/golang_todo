@@ -46,7 +46,6 @@ func extractUser(req *http.Request) (string, error) {
 	} else {
 		return extractUserFromCookie(req)
 	}
-
 }
 
 func extractUserFromCookie(req *http.Request) (string, error) {

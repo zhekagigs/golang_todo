@@ -3,7 +3,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>cli: Go Coverage Report</title>
+		<title>analytics: Go Coverage Report</title>
 		<style>
 			body {
 				background: black;
@@ -55,37 +55,47 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/zhekagigs/golang_todo/cli/cli.go (72.4%)</option>
+				<option value="file0">github.com/zhekagigs/golang_todo/analytics/analytics.go (0.0%)</option>
 				
-				<option value="file1">github.com/zhekagigs/golang_todo/cmd/main.go (83.3%)</option>
+				<option value="file1">github.com/zhekagigs/golang_todo/analytics/coordinator.go (0.0%)</option>
 				
-				<option value="file2">github.com/zhekagigs/golang_todo/controller/api.go (22.9%)</option>
+				<option value="file2">github.com/zhekagigs/golang_todo/analytics/rpc.go (0.0%)</option>
 				
-				<option value="file3">github.com/zhekagigs/golang_todo/controller/auth.go (0.0%)</option>
+				<option value="file3">github.com/zhekagigs/golang_todo/analytics/wordCount.go (100.0%)</option>
 				
-				<option value="file4">github.com/zhekagigs/golang_todo/controller/serv.go (0.0%)</option>
+				<option value="file4">github.com/zhekagigs/golang_todo/analytics/worker.go (0.0%)</option>
 				
-				<option value="file5">github.com/zhekagigs/golang_todo/controller/task_handler.go (66.3%)</option>
+				<option value="file5">github.com/zhekagigs/golang_todo/cli/cli.go (72.4%)</option>
 				
-				<option value="file6">github.com/zhekagigs/golang_todo/internal/task.go (67.6%)</option>
+				<option value="file6">github.com/zhekagigs/golang_todo/cmd/main.go (83.3%)</option>
 				
-				<option value="file7">github.com/zhekagigs/golang_todo/internal/taskHolder.go (69.4%)</option>
+				<option value="file7">github.com/zhekagigs/golang_todo/controller/api.go (22.9%)</option>
 				
-				<option value="file8">github.com/zhekagigs/golang_todo/internal/taskService.go (0.0%)</option>
+				<option value="file8">github.com/zhekagigs/golang_todo/controller/auth.go (0.0%)</option>
 				
-				<option value="file9">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
+				<option value="file9">github.com/zhekagigs/golang_todo/controller/serv.go (0.0%)</option>
 				
-				<option value="file10">github.com/zhekagigs/golang_todo/internal/utils.go (73.1%)</option>
+				<option value="file10">github.com/zhekagigs/golang_todo/controller/task_handler.go (66.3%)</option>
 				
-				<option value="file11">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
+				<option value="file11">github.com/zhekagigs/golang_todo/internal/task.go (67.6%)</option>
 				
-				<option value="file12">github.com/zhekagigs/golang_todo/logger/logger.go (100.0%)</option>
+				<option value="file12">github.com/zhekagigs/golang_todo/internal/taskHolder.go (69.4%)</option>
 				
-				<option value="file13">github.com/zhekagigs/golang_todo/middleware/middleware.go (50.0%)</option>
+				<option value="file13">github.com/zhekagigs/golang_todo/internal/taskService.go (0.0%)</option>
 				
-				<option value="file14">github.com/zhekagigs/golang_todo/users/users.go (50.0%)</option>
+				<option value="file14">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
 				
-				<option value="file15">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
+				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (88.5%)</option>
+				
+				<option value="file16">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
+				
+				<option value="file17">github.com/zhekagigs/golang_todo/logger/logger.go (100.0%)</option>
+				
+				<option value="file18">github.com/zhekagigs/golang_todo/middleware/middleware.go (50.0%)</option>
+				
+				<option value="file19">github.com/zhekagigs/golang_todo/users/users.go (50.0%)</option>
+				
+				<option value="file20">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
 				
 				</select>
 			</div>
@@ -99,7 +109,658 @@
 		</div>
 		<div id="content">
 		
-		<pre class="file" id="file0" style="display: none">package cli
+		<pre class="file" id="file0" style="display: none">package analytics
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+        "strings"
+        "sync"
+        "time"
+)
+
+func driveCoordinator(wg *sync.WaitGroup) <span class="cov0" title="0">{
+        filesPaths, err := getJSONFiles("resources/")
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+        <span class="cov0" title="0">coord := MakeCoordinator(filesPaths, 5)
+        for coord.Done() == false </span><span class="cov0" title="0">{
+                time.Sleep(time.Second)
+        }</span>
+        <span class="cov0" title="0">if coord.Done() </span><span class="cov0" title="0">{
+                fmt.Println("coordinator done")
+        }</span>
+
+        <span class="cov0" title="0">time.Sleep(time.Second)
+        wg.Done()</span>
+}
+
+func driveWorkers(wg *sync.WaitGroup) <span class="cov0" title="0">{
+
+        mapf := WcMap
+        reducef := WcReduce
+
+        Worker(mapf, reducef)
+        wg.Done()
+}</span>
+
+func getJSONFiles(dir string) ([]string, error) <span class="cov0" title="0">{
+        entries, err := os.ReadDir(dir)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("error reading directory %s: %w", dir, err)
+        }</span>
+
+        <span class="cov0" title="0">var jsonFiles []string
+        for _, entry := range entries </span><span class="cov0" title="0">{
+                if !entry.IsDir() &amp;&amp; strings.HasSuffix(entry.Name(), ".json") </span><span class="cov0" title="0">{
+                        jsonFiles = append(jsonFiles, filepath.Join(dir, entry.Name()))
+                }</span>
+        }
+
+        <span class="cov0" title="0">return jsonFiles, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package analytics
+
+import (
+        "fmt"
+        "log"
+        "net"
+        "net/http"
+        "net/rpc"
+        "os"
+)
+
+/*
+The workers will talk to the coordinator via RPC.
+Each worker process will ask the coordinator for a task,
+read the task's input from one or more files, execute the task,
+and write the task's output to one or more files.
+The coordinator should notice
+if a worker hasn't completed its task in a reasonable amount of time
+(for this lab, use ten seconds),
+and give the same task to a different worker.
+*/
+
+type Coordinator struct {
+        // Your definitions here.
+        Tasks          []Task
+        NumReduce      int
+        MapTaskCode    int
+        ReduceTaskCode int
+}
+
+// Your code here -- RPC handlers for the worker to call.
+
+func (c *Coordinator) GiveMeAMapTask(request *TaskRequest, reply *TaskReply) error <span class="cov0" title="0">{
+        log.Println("Coordinator::Map requested")
+
+        for _, task := range c.Tasks </span><span class="cov0" title="0">{
+                if !task.isMapped </span><span class="cov0" title="0">{
+                        reply.Filename = task.Filename
+                        reply.NumReducers = c.NumReduce
+                        reply.TaskNumber = task.TaskNum
+                        task.State = InProgress
+                }</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (c *Coordinator) TaskDone(request *TaskRequest, reply *TaskReply) error <span class="cov0" title="0">{
+        log.Println("Coordinator::TaskDone requested")
+        log.Println("Coordinator::received", request)
+
+        for _, task := range c.Tasks </span><span class="cov0" title="0">{
+                if task.TaskNum == request.TaskNumber </span><span class="cov0" title="0">{
+                        task.State = request.State
+                        if request.State == Completed &amp;&amp; request.TaskType == MapTask </span><span class="cov0" title="0">{
+                                task.isMapped = true
+
+                        }</span>
+                        <span class="cov0" title="0">log.Println("Coordinator::updated task state", task.Filename, task.State)</span>
+                }
+
+                // if !task.isMapped {
+                //         reply.Filename = task.Filename
+                //         reply.NumReducers = c.NumReduce
+                //         reply.TaskNumber = task.TaskNum
+                //         task.State = InProgress
+                // }
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+// If no re- sponse is received from a worker in a certain amount of time, the master marks the worker as failed. Any map tasks completed by the worker are reset back to their ini- tial idle state, and therefore become eligible for schedul- ing on other workers. Similarly, any map task or reduce task in progress on a failed worker is also reset to idle and becomes eligible for rescheduling.
+func (c *Coordinator) PingWorker() error <span class="cov0" title="0">{
+        return nil
+}</span>
+
+func (c *Coordinator) giveMeAReduceTask(request *TaskRequest, reply *TaskReply) error <span class="cov0" title="0">{
+        fmt.Println("Coordinator::Reduce requested")
+        for _, task := range c.Tasks </span><span class="cov0" title="0">{
+                if !task.isReduced </span><span class="cov0" title="0">{
+                        reply.Filename = task.Filename
+                }</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+// an example RPC handler.
+// the RPC argument and reply types are defined in rpc.go.
+func (c *Coordinator) Example(args *ExampleArgs, reply *ExampleReply) error <span class="cov0" title="0">{
+        fmt.Println("Coordinator::Example hande")
+        reply.Y = args.X + 11
+        reply.World = " It's world, my man "
+        return nil
+}</span>
+
+// start a thread that listens for RPCs from worker.go
+func (c *Coordinator) server() <span class="cov0" title="0">{
+        log.Println("server:: start serving")
+        rpc.Register(c)
+        rpc.HandleHTTP()
+        //l, e := net.Listen("tcp", ":1234")
+        sockname := coordinatorSock()
+        os.Remove(sockname)
+        l, e := net.Listen("unix", sockname)
+        if e != nil </span><span class="cov0" title="0">{
+                log.Fatal("listen error:", e)
+        }</span>
+        <span class="cov0" title="0">log.Println("Coordinator::Server listens on sockname")
+        go http.Serve(l, nil)</span>
+}
+
+// main/mrcoordinator.go calls Done() periodically to find out
+// if the entire job has finished.
+func (c *Coordinator) Done() bool <span class="cov0" title="0">{
+        result := true
+        for _, task := range c.Tasks </span><span class="cov0" title="0">{
+                if !task.isMapped || !task.isReduced </span><span class="cov0" title="0">{
+                        result = false
+                }</span>
+        }
+        <span class="cov0" title="0">return result</span>
+}
+
+// create a Coordinator.
+// main/mrcoordinator.go calls this function.
+// nReduce is the number of reduce tasks to use.
+func MakeCoordinator(files []string, nReduce int) *Coordinator <span class="cov0" title="0">{
+        var tasks []Task
+        for i, filename := range files </span><span class="cov0" title="0">{
+                tasks = append(tasks, Task{filename, i, false, false, MapTask})
+        }</span>
+        <span class="cov0" title="0">c := Coordinator{
+                Tasks:          tasks,
+                NumReduce:      nReduce,
+                MapTaskCode:    0,
+                ReduceTaskCode: 0,
+        }
+
+        log.Println("Coordinator:: files to work", tasks)
+        log.Println("Coordinator:: new coordinator made v.01")
+
+        c.server()
+        return &amp;c</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package analytics
+
+//
+// RPC definitions.
+//
+// remember to capitalize all names.
+//
+
+import (
+        "fmt"
+        "os"
+        "strconv"
+)
+
+//
+// example to show how to declare the arguments
+// and reply for an RPC.
+//
+
+type MessageType int32
+
+const (
+        Idle       MessageType = 0
+        InProgress MessageType = 1
+        Completed  MessageType = 2
+        ReduceTask MessageType = 3
+        MapTask    MessageType = 4
+)
+
+func messageTypeString(t MessageType) string <span class="cov0" title="0">{
+        switch t </span>{
+        case Idle:<span class="cov0" title="0">
+                return "Idle"</span>
+        case InProgress:<span class="cov0" title="0">
+                return "In Progress"</span>
+        case Completed:<span class="cov0" title="0">
+                return "Completed"</span>
+        case ReduceTask:<span class="cov0" title="0">
+                return "Reduce"</span>
+        case MapTask:<span class="cov0" title="0">
+                return "Map"</span>
+        default:<span class="cov0" title="0">
+                return fmt.Sprintf("Unknown MessageType: %d", t)</span>
+        }
+}
+
+type ExampleArgs struct {
+        X     int
+        Hello string
+}
+
+type ExampleReply struct {
+        Y     int
+        World string
+}
+
+type TaskRequest struct {
+        State      MessageType
+        FileNames  []string
+        TaskNumber int
+        TaskType   MessageType
+}
+
+type TaskReply struct {
+        Filename    string
+        TaskNumber  int
+        NumReducers int
+        TaskType    MessageType
+        TaskState   MessageType
+}
+
+func (t TaskReply) String() string <span class="cov0" title="0">{
+        return fmt.Sprintf("Filename: %s, Task Number: %d, Num Reducers: %d, Task Type: %s",
+                t.Filename, t.TaskNumber, t.NumReducers, messageTypeString(t.TaskType))
+}</span>
+
+type Task struct {
+        Filename  string
+        TaskNum   int
+        isMapped  bool
+        isReduced bool
+        State     MessageType
+}
+
+// Add your RPC definitions here.
+
+// Cook up a unique-ish UNIX-domain socket name
+// in /var/tmp, for the coordinator.
+// Can't use the current directory since
+// Athena AFS doesn't support UNIX-domain sockets.
+func coordinatorSock() string <span class="cov0" title="0">{
+        s := "/var/tmp/5840-mr-"
+        s += strconv.Itoa(os.Getuid())
+        return s
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package analytics
+
+import (
+        "strconv"
+        "strings"
+        "unicode"
+)
+
+// The map function is called once for each file of input. The first
+// argument is the name of the input file, and the second is the
+// file's complete contents. You should ignore the input file name,
+// and look only at the contents argument. The return value is a slice
+// of key/value pairs.
+func WcMap(filename string, contents string) []KeyValue <span class="cov8" title="1">{
+        // function to detect word separators.
+        ff := func(r rune) bool </span><span class="cov8" title="1">{ return !unicode.IsLetter(r) }</span>
+
+        // split contents into an array of words.
+        <span class="cov8" title="1">words := strings.FieldsFunc(contents, ff)
+
+        kva := []KeyValue{}
+        for _, word := range words </span><span class="cov8" title="1">{
+                kv := KeyValue{Key: word, Value: "1"}
+                kva = append(kva, kv)
+        }</span>
+        <span class="cov8" title="1">return kva</span>
+}
+
+// The reduce function is called once for each key generated by the
+// map tasks, with a list of all the values created for that key by
+// any map task.
+func WcReduce(key string, values []string) string <span class="cov8" title="1">{
+        // return the number of occurrences of this word.
+        return strconv.Itoa(len(values))
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package analytics
+
+import (
+        "bufio"
+        "fmt"
+        "hash/fnv"
+        "io"
+        "log"
+        "net/rpc"
+        "os"
+        "sort"
+        "strconv"
+        "strings"
+)
+
+// Map functions return a slice of KeyValue.
+type KeyValue struct {
+        Key   string
+        Value string
+}
+
+// for sorting by key.
+type ByKey []KeyValue
+
+// for sorting by key.
+func (a ByKey) Len() int           <span class="cov0" title="0">{ return len(a) }</span>
+func (a ByKey) Swap(i, j int)      <span class="cov0" title="0">{ a[i], a[j] = a[j], a[i] }</span>
+func (a ByKey) Less(i, j int) bool <span class="cov0" title="0">{ return a[i].Key &lt; a[j].Key }</span>
+
+func ScanFile(f *os.File) (map[string]string, error) <span class="cov0" title="0">{
+        var (
+                kmap map[string]string
+                err  error
+        )
+        // Read the entire file into a byte slice
+        b, err := io.ReadAll(f)
+        if err != nil </span><span class="cov0" title="0">{
+                return kmap, err
+        }</span>
+        // Convert the byte slice to a string
+        <span class="cov0" title="0">str := string(b[:])
+        // Split the string into lines
+        lines := strings.Split(str, "\n")
+        // Iterate over the lines and split them into key-value pairs
+        for _, line := range lines </span><span class="cov0" title="0">{
+                parts := strings.SplitN(line, ":", 2)
+                key := parts[0]
+                value := parts[1]
+                kmap[key] = value
+        }</span>
+        <span class="cov0" title="0">return kmap, nil</span>
+}
+
+// use ihash(key) % NReduce to choose the reduce
+// task number for each KeyValue emitted by Map.
+func ihash(key string) int <span class="cov0" title="0">{
+        h := fnv.New32a()
+        h.Write([]byte(key))
+        return int(h.Sum32() &amp; 0x7fffffff)
+}</span>
+
+// main/mrworker.go calls this function.
+// The map phase should divide the intermediate keys into buckets for nReduce reduce
+// tasks, where nReduce is the number of reduce tasks -- the argument that
+// main/mrcoordinator.go passes to MakeCoordinator(). Each mapper should create
+// nReduce intermediate files for consumption by the reduce tasks.
+// The worker implementation should put the output of the X'th reduce task in the file mr-out-X.
+// A mr-out-X file should contain one line per Reduce function output. The line should be generated with the Go "%v %v" format, called with the key and value.
+// When the job is completely finished, the worker processes should exit. A simple way to implement this is to use the return value from call(): if the worker fails to contact the coordinator, it can assume that the coordinator has exited because the job is done, so the worker can terminate too. Depending on your design, you might also find it helpful to have a "please exit" pseudo-task that the coordinator can give to workers.
+func Worker(mapf func(string, string) []KeyValue, reducef func(string, []string) string) <span class="cov0" title="0">{
+
+        log.Println("Worker:: worker started")
+        for </span><span class="cov0" title="0">{
+                reply := CallCoordinatorForTask("GiveMeAMapTask")
+                log.Println("task received", MessageType(reply.TaskType))
+                if reply.TaskType == MapTask || reply.TaskState == Idle </span><span class="cov0" title="0">{
+                        tmpFileNames := doMap(mapf, reply)
+                        CallMapTaskDone(tmpFileNames, reply.TaskNumber)
+                }</span>
+                <span class="cov0" title="0">if reply.TaskType == ReduceTask </span><span class="cov0" title="0">{
+                        doReduce(reply, reply.Filename, reducef)
+                }</span> else<span class="cov0" title="0"> {
+                        log.Panicf("unknown task type, %v", reply.TaskType)
+                }</span>
+        }
+}
+
+func CallMapTaskDone(tmpFileNames []string, tasknumber int) TaskReply <span class="cov0" title="0">{
+        log.Println("Worker::callMapTaskDone initialized")
+        args := TaskRequest{Completed, tmpFileNames, tasknumber, MapTask}
+        reply := TaskReply{}
+        handlerName := "TaskDone"
+        ok := call("Coordinator."+handlerName, &amp;args, &amp;reply)
+        if ok </span><span class="cov0" title="0">{
+                log.Printf("Worker::coordinator replied with %s\n", reply)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Println("MyCall failed!")
+        }</span>
+
+        <span class="cov0" title="0">return reply</span>
+}
+
+func doReduce(replied TaskReply, intermediate string, reducef func(string, []string) string) <span class="cov0" title="0">{
+        oname := "mr-out-" + strconv.Itoa(replied.TaskNumber)
+        ofile, _ := os.Create(oname)
+        produceReducedOutput(intermediate, reducef, ofile)
+        log.Println("Worker::finished printing out file " + oname)
+        ofile.Close()
+}</span>
+
+func doMap(mapf func(string, string) []KeyValue, replied TaskReply) []string <span class="cov0" title="0">{
+        log.Printf("Worker::doMap\n")
+        intermediate := collectIntermediate(mapf, replied.Filename, replied.NumReducers)
+        // debug := 0
+        // for k, v := range intermediate {
+        //         fmt.Println(k, v)
+        //         if debug &gt; 10 {
+        //                 break
+        //         }
+        //         debug++
+        // }
+        var interNames []string
+        interName := "map-inter-"
+
+        for key, interGroupings := range intermediate </span><span class="cov0" title="0">{
+                sort.Sort(ByKey(interGroupings))
+                tmpIntername := interName + strconv.Itoa(key) + "-" + replied.Filename
+                interFile, _ := os.Create(tmpIntername)
+                for _, kvpair := range interGroupings </span><span class="cov0" title="0">{
+                        fmt.Fprintf(interFile, "%v %v\n", kvpair.Key, kvpair.Value)
+                }</span>
+                <span class="cov0" title="0">log.Println("Worker::created temp file ", interName+strconv.Itoa(key))
+                interFile.Close()
+                interNames = append(interNames, tmpIntername)</span>
+        }
+        <span class="cov0" title="0">log.Println("Worker::finished printing intermeditea file " + interName)
+        return interNames</span>
+}
+
+func collectIntermediate(mapf func(string, string) []KeyValue, filename string, nReduce int) map[int][]KeyValue <span class="cov0" title="0">{
+        log.Printf("Worker::doMap\n")
+
+        partitions := make(map[int][]KeyValue)
+
+        file, err := os.Open(filename)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("cannot open %v", filename)
+        }</span>
+        <span class="cov0" title="0">content, err := io.ReadAll(file)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("cannot read %v", filename)
+        }</span>
+        <span class="cov0" title="0">file.Close()
+        keyValuePairs := mapf(filename, string(content))
+        for _, kv := range keyValuePairs </span><span class="cov0" title="0">{
+                partitionKey := ihash(kv.Key) % nReduce
+
+                if _, ok := partitions[partitionKey]; !ok </span><span class="cov0" title="0">{
+                        partitions[partitionKey] = []KeyValue{kv}
+                }</span> else<span class="cov0" title="0"> {
+                        partitions[partitionKey] = append(partitions[partitionKey], kv)
+                }</span>
+                <span class="cov0" title="0">if (len(partitions)) &gt; nReduce </span><span class="cov0" title="0">{
+                        panic("Worker:: partition unexpected")</span>
+                }
+        }
+
+        <span class="cov0" title="0">return partitions</span>
+}
+
+func produceReducedOutput(intermediateFile string, reducef func(string, []string) string, ofile *os.File) <span class="cov0" title="0">{
+        i := 0
+        f, err := os.Open(intermediateFile)
+        if err != nil </span><span class="cov0" title="0">{
+                panic("Error reduce task reading inter file")</span>
+        }
+        <span class="cov0" title="0">defer f.Close()
+
+        // // Create a scanner to scan the file
+        // scanner := Scanner{
+        //         F:        f,
+        //         Buffer:   make([]byte, 1024),
+        //         Capacity: 1024,
+        // }
+
+        scanner := bufio.NewScanner(f)
+
+        var kvCollector []KeyValue
+
+        // Iterate over each line in the file
+        for scanner.Scan() </span><span class="cov0" title="0">{
+                line := scanner.Text()
+                // Check for errors while scanning
+                if err := scanner.Err(); err != nil </span><span class="cov0" title="0">{
+                        fmt.Println("Error reading file:", err)
+                }</span>
+                // Trim the newline character from the end of the line
+                <span class="cov0" title="0">line = strings.TrimRight(line, "\r\n")
+                // Parse the line into a KeyValue struct
+                var kv KeyValue
+
+                _, err = fmt.Sscanf(line, "%s %s", &amp;kv.Key, &amp;kv.Value)
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Println(err)
+                        continue</span>
+                }
+                <span class="cov0" title="0">kvCollector = append(kvCollector, kv)</span>
+                // Do something with the KeyValue struct
+        }
+
+        <span class="cov0" title="0">for i &lt; len(kvCollector) </span><span class="cov0" title="0">{
+                j := i + 1
+                for j &lt; len(kvCollector) &amp;&amp; kvCollector[j].Key == kvCollector[i].Key </span><span class="cov0" title="0">{
+                        j++
+                }</span>
+                <span class="cov0" title="0">values := []string{}
+                for k := i; k &lt; j; k++ </span><span class="cov0" title="0">{
+                        values = append(values, kvCollector[k].Value)
+                }</span>
+                <span class="cov0" title="0">output := reducef(kvCollector[i].Key, values)
+
+                fmt.Fprintf(ofile, "%v %v\n", kvCollector[i].Key, output)
+
+                i = j</span>
+        }
+}
+
+func CallCoordinatorForTask(handlerName string) TaskReply <span class="cov0" title="0">{
+        log.Println("Worker::CallForMapTask")
+        args := TaskRequest{}
+        reply := TaskReply{}
+        ok := call("Coordinator."+handlerName, &amp;args, &amp;reply)
+        if ok </span><span class="cov0" title="0">{
+                log.Printf("Worker::coordinator replied with %s\n", reply)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Println("MyCall failed!")
+        }</span>
+        <span class="cov0" title="0">return reply</span>
+}
+
+// example function to show how to make an RPC call to the coordinator.
+//
+// the RPC argument and reply types are defined in rpc.go.
+func CallExample() <span class="cov0" title="0">{
+        log.Println()
+        // declare an argument structure.
+        args := ExampleArgs{}
+
+        // fill in the argument(s).
+        args.X = 99
+        args.Hello = "Hello"
+
+        // declare a reply structure.
+        reply := ExampleReply{}
+
+        // send the RPC request, wait for the reply.
+        // the "Coordinator.Example" tells the
+        // receiving server that we'd like to call
+        // the Example() method of struct Coordinator.
+        ok := call("Coordinator.Example", &amp;args, &amp;reply)
+        if ok </span><span class="cov0" title="0">{
+                // reply.Y should be 100.
+                fmt.Printf("reply.Y %v\n", reply.Y)
+                fmt.Printf("coordinator replyed with %s\n", reply.World)
+        }</span> else<span class="cov0" title="0"> {
+                fmt.Printf("Example call failed!\n")
+        }</span>
+
+}
+
+// send an RPC request to the coordinator, wait for the response.
+// usually returns true.
+// returns false if something goes wrong.
+func call(rpcname string, args interface{}, reply interface{}) bool <span class="cov0" title="0">{
+        // c, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
+        sockname := coordinatorSock()
+        c, err := rpc.DialHTTP("unix", sockname)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("dialing:", err)
+        }</span>
+        <span class="cov0" title="0">defer c.Close()
+
+        err = c.Call(rpcname, args, reply)
+        if err == nil </span><span class="cov0" title="0">{
+                return true
+        }</span>
+
+        <span class="cov0" title="0">fmt.Println(err)
+        return false</span>
+}
+
+func SplitSlice(array []int, numberOfChunks int) [][]int <span class="cov0" title="0">{
+        if len(array) == 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov0" title="0">if numberOfChunks &lt;= 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov0" title="0">if numberOfChunks == 1 </span><span class="cov0" title="0">{
+                return [][]int{array}
+        }</span>
+        <span class="cov0" title="0">result := make([][]int, numberOfChunks)
+        // we have more splits than elements in the input array.
+        if numberOfChunks &gt; len(array) </span><span class="cov0" title="0">{
+                for i := 0; i &lt; len(array); i++ </span><span class="cov0" title="0">{
+                        result[i] = []int{array[i]}
+                }</span>
+                <span class="cov0" title="0">return result</span>
+        }
+        <span class="cov0" title="0">for i := 0; i &lt; numberOfChunks; i++ </span><span class="cov0" title="0">{
+                min := (i * len(array) / numberOfChunks)
+                max := ((i + 1) * len(array)) / numberOfChunks
+                result[i] = array[min:max]
+        }</span>
+        <span class="cov0" title="0">return result</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package cli
 
 import (
         "bufio"
@@ -468,7 +1129,7 @@ func readTasks(taskHolder *in.TaskHolder) error <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file1" style="display: none">package main
+		<pre class="file" id="file6" style="display: none">package main
 
 import (
         "net/http"
@@ -546,7 +1207,7 @@ func startHTTPServer(taskHandler *controller.TaskRenderHandler, server controlle
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package controller
+		<pre class="file" id="file7" style="display: none">package controller
 
 import (
         "encoding/json"
@@ -696,7 +1357,7 @@ func getTaskIdFromPath(r *http.Request) (int, error) <span class="cov0" title="0
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package controller
+		<pre class="file" id="file8" style="display: none">package controller
 
 import (
         "encoding/json"
@@ -800,7 +1461,7 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) <spa
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package controller
+		<pre class="file" id="file9" style="display: none">package controller
 
 import (
         "context"
@@ -827,7 +1488,7 @@ func (s *RealHTTPServer) Shutdown(ctx context.Context) error <span class="cov0" 
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package controller
+		<pre class="file" id="file10" style="display: none">package controller
 
 import (
         "fmt"
@@ -1009,7 +1670,7 @@ func ExtractFormValues(r *http.Request) (*internal.TaskOptional, error) <span cl
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package internal
+		<pre class="file" id="file11" style="display: none">package internal
 
 import (
         "encoding/json"
@@ -1175,7 +1836,7 @@ func validateJSONFile(filePath string) error <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package internal
+		<pre class="file" id="file12" style="display: none">package internal
 
 import (
         "errors"
@@ -1405,7 +2066,7 @@ func isValidTaskCategory(category TaskCategory) bool <span class="cov8" title="1
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package internal
+		<pre class="file" id="file13" style="display: none">package internal
 
 type ConcurrentTaskService struct {
         TaskHolder   *TaskHolder
@@ -1469,7 +2130,7 @@ func (t *ConcurrentTaskService) Read() []Task <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package internal
+		<pre class="file" id="file14" style="display: none">package internal
 
 import (
         "bytes"
@@ -1594,7 +2255,7 @@ func CaptureStdin() (oldStdin *os.File, read *os.File, write *os.File) <span cla
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package internal
+		<pre class="file" id="file15" style="display: none">package internal
 
 import (
         "embed"
@@ -1641,18 +2302,18 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         noun := beerTypes[rand.Intn(len(beerTypes))]
                         taskValue = strings.Join([]string{verb, adj, noun}, " ")
                         category = Brewing</span>
-                case 1:<span class="cov0" title="0">
+                case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 verb = "Order"
                         }</span>
-                        <span class="cov0" title="0">ingredient := ingredients[rand.Intn(len(ingredients))]
+                        <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
+                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
                                 unit = "lbs"
                         }</span>
-                        <span class="cov0" title="0">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
+                        <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
                         category = Brewing</span>
                 case 2:<span class="cov8" title="1">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
@@ -1660,7 +2321,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 case 3:<span class="cov8" title="1">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
-                case 4:<span class="cov8" title="1">
+                case 4:<span class="cov0" title="0">
                         taskValue = qualityTasks[rand.Intn(len(qualityTasks))]
                         category = Quality</span>
 
@@ -1701,7 +2362,7 @@ func BoolPtr(b bool) *bool <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package internal
+		<pre class="file" id="file16" style="display: none">package internal
 
 import (
         "fmt"
@@ -1794,7 +2455,7 @@ func (wp *WorkerPool) Close() <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package logger
+		<pre class="file" id="file17" style="display: none">package logger
 
 import (
         "log"
@@ -1815,7 +2476,7 @@ func init() <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package middleware
+		<pre class="file" id="file18" style="display: none">package middleware
 
 import (
         "context"
@@ -1863,7 +2524,6 @@ func extractUser(req *http.Request) (string, error) <span class="cov8" title="1"
         } else<span class="cov0" title="0"> {
                 return extractUserFromCookie(req)
         }</span>
-
 }
 
 func extractUserFromCookie(req *http.Request) (string, error) <span class="cov0" title="0">{
@@ -1907,7 +2567,7 @@ type customResponseWriter struct {
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package users
+		<pre class="file" id="file19" style="display: none">package users
 
 import (
         "encoding/json"
@@ -1991,7 +2651,7 @@ func (s *UserStore) GetUserById(userId string) (User, bool) <span class="cov8" t
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package view
+		<pre class="file" id="file20" style="display: none">package view
 
 import (
         "embed"

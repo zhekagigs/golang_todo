@@ -17,7 +17,7 @@ import (
 
 var MOCK_TOKEN string
 
-func setupConfig(t *testing.T) (*httptest.Server, *internal.TaskHolder) {
+func setupConfig(t testing.TB) (*httptest.Server, *internal.TaskHolder) {
 	// Setup
 	taskHolder := internal.NewTaskHolder("resources/concurrent_disk.json")
 	taskService := internal.NewConcurrentTaskService(taskHolder)
@@ -66,7 +66,7 @@ func TestCreateTaskIntegration(t *testing.T) {
 
 func TestManyCreateTaskIntegrationSequentially(t *testing.T) {
 	t.Log("Starting TestManyCreateTaskIntegration")
-	NUM := 500000
+	NUM := 500
 	server, taskHolder := setupConfig(t)
 	tasks := internal.GenerateRandomTasks(NUM)
 	for _, task := range tasks {
@@ -101,6 +101,35 @@ func TestManyCreateTaskIntegrationSequentially(t *testing.T) {
 		t.Errorf("want %d, got %d", NUM, total)
 	}
 	// if taskHolder.
+}
+
+func BenchmarkCreateTasks(b *testing.B) {
+	taskCounts := []int{1, 10, 100, 1000, 10000}
+	for _, count := range taskCounts {
+		b.Run(fmt.Sprintf("Task %d", count), func(b *testing.B) {
+			server, _ := setupConfig(b)
+			b.ResetTimer()
+			tasks := internal.GenerateRandomTasks(count)
+			for i := 0; i < b.N; i++ {
+				for _, task := range tasks {
+					testTask := internal.AdapterTaskOptional(task)
+					payload, err := provideJsonBody(testTask)
+					if err != nil {
+						b.Fatal(err)
+					}
+
+					resp, err := postRequest(server.URL+"/api/tasks", payload, MOCK_TOKEN)
+					if err != nil {
+						b.Fatal(err)
+					}
+					if resp.StatusCode != http.StatusCreated {
+						b.Fatalf("expected status Created, got %v", resp.Status)
+					}
+					assertTaskFields(parseResponse(resp, b), testTask, b)
+				}
+			}
+		})
+	}
 }
 
 func TestMultipleClientsPostRequest(t *testing.T) {
@@ -160,7 +189,7 @@ func TestMultipleClientsPostRequest(t *testing.T) {
 	}
 }
 
-func parseResponse(resp *http.Response, t *testing.T) internal.Task {
+func parseResponse(resp *http.Response, t testing.TB) internal.Task {
 	var createdTask internal.Task
 	err := json.NewDecoder(resp.Body).Decode(&createdTask)
 	if err != nil {
@@ -183,7 +212,7 @@ func verifyTaskInHolder(taskHolder *internal.TaskHolder, createdTask internal.Ta
 	}
 }
 
-func assertTaskFields(createdTask internal.Task, testTask internal.TaskOptional, t *testing.T) {
+func assertTaskFields(createdTask internal.Task, testTask internal.TaskOptional, t testing.TB) {
 	if createdTask.Msg != *testTask.Msg {
 		t.Errorf("Expected task message %s, got %s", *testTask.Msg, createdTask.Msg)
 	}
