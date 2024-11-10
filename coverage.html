@@ -65,9 +65,9 @@
 				
 				<option value="file4">github.com/zhekagigs/golang_todo/analytics/worker.go (0.0%)</option>
 				
-				<option value="file5">github.com/zhekagigs/golang_todo/cli/cli.go (72.4%)</option>
+				<option value="file5">github.com/zhekagigs/golang_todo/cli/cli.go (72.6%)</option>
 				
-				<option value="file6">github.com/zhekagigs/golang_todo/cmd/main.go (83.3%)</option>
+				<option value="file6">github.com/zhekagigs/golang_todo/cmd/main.go (73.2%)</option>
 				
 				<option value="file7">github.com/zhekagigs/golang_todo/controller/api.go (22.9%)</option>
 				
@@ -75,7 +75,7 @@
 				
 				<option value="file9">github.com/zhekagigs/golang_todo/controller/serv.go (0.0%)</option>
 				
-				<option value="file10">github.com/zhekagigs/golang_todo/controller/task_handler.go (66.3%)</option>
+				<option value="file10">github.com/zhekagigs/golang_todo/controller/task_handler.go (66.7%)</option>
 				
 				<option value="file11">github.com/zhekagigs/golang_todo/internal/task.go (67.6%)</option>
 				
@@ -85,7 +85,7 @@
 				
 				<option value="file14">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
 				
-				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (88.5%)</option>
+				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (92.3%)</option>
 				
 				<option value="file16">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
 				
@@ -793,7 +793,7 @@ const (
 )
 
 type CLIApp interface {
-        AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int)
+        AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int, bool)
         RunTaskManagmentCLI(taskHolder *in.TaskHolder) int
 }
 
@@ -816,19 +816,19 @@ func (cli *RealCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int <span 
         }
 }
 
-func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int) <span class="cov8" title="1">{
-        fileName, savedTasks, isHelp, isExit, exitCode := ParseUserArg()
+func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int, bool) <span class="cov8" title="1">{
+        fileName, savedTasks, isHelp, isExit, exitCode, isWeb := ParseUserArg()
         if isHelp </span><span class="cov8" title="1">{
-                return nil, isExit, exitCode
+                return nil, isExit, exitCode, isWeb
         }</span>
         <span class="cov8" title="1">PrintCLITitle(savedTasks)
 
         taskHolder, err := PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
         if err != nil </span><span class="cov0" title="0">{
                 fmt.Printf("Error populating task holder: %v\n", err)
-                return nil, true, ExitCodeError
+                return nil, true, ExitCodeError, isWeb
         }</span>
-        <span class="cov8" title="1">return taskHolder, false, ExitCodeSuccess</span>
+        <span class="cov8" title="1">return taskHolder, false, ExitCodeSuccess, isWeb</span>
 }
 
 func PrintCLITitle(savedTasks []in.Task) <span class="cov8" title="1">{
@@ -839,7 +839,7 @@ func PrintCLITitle(savedTasks []in.Task) <span class="cov8" title="1">{
 
 func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, error) <span class="cov8" title="1">{
         if fileName == "" </span><span class="cov0" title="0">{
-                fileName = "resources/disk.json"
+                fileName = "resources/tasks.json"
         }</span>
         <span class="cov8" title="1">taskHolder := newTaskHolder(fileName)
         // var maxId int TODO ?
@@ -852,22 +852,22 @@ func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder fun
         <span class="cov8" title="1">return taskHolder, nil</span>
 }
 
-func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit bool, exitCode int) <span class="cov8" title="1">{
+func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit bool, exitCode int, isWebFlag bool) <span class="cov8" title="1">{
         helpFlag := flag.Bool("h", false, "Help is here")
-
+        webFlag := flag.Bool("web", false, "Avoids using CLI")
         flag.Usage = PrintHelp
 
         flag.Parse()
 
         if *helpFlag </span><span class="cov8" title="1">{
                 flag.Usage()
-                return "", nil, true, true, ExitCodeSuccess
+                return "", nil, *helpFlag, true, ExitCodeSuccess, *webFlag
         }</span>
 
         <span class="cov8" title="1">if flag.NArg() &lt; 1 </span><span class="cov8" title="1">{
                 fmt.Println("Error: JSON file path is required")
                 flag.Usage()
-                return "", nil, true, true, ExitCodeError
+                return "", nil, true, true, ExitCodeError, *webFlag
         }</span>
 
         <span class="cov8" title="1">fileName = flag.Arg(0)
@@ -880,9 +880,9 @@ func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit 
                         fmt.Printf("Error while reading json file: %v\n", err)</span>
                 }
                 <span class="cov8" title="1">flag.Usage()
-                return "", nil, true, true, ExitCodeError</span>
+                return "", nil, true, true, ExitCodeError, *webFlag</span>
         }
-        <span class="cov8" title="1">return fileName, savedTasks, false, false, ExitCodeSuccess</span>
+        <span class="cov8" title="1">return fileName, savedTasks, false, false, ExitCodeSuccess, *webFlag</span>
 }
 
 func PrintHelp() <span class="cov8" title="1">{
@@ -1133,10 +1133,10 @@ func readTasks(taskHolder *in.TaskHolder) error <span class="cov8" title="1">{
 
 import (
         "net/http"
-        "os"
-        "time"
-
         _ "net/http/pprof"
+        "os"
+        "os/signal"
+        "syscall"
 
         "github.com/zhekagigs/golang_todo/cli"
         "github.com/zhekagigs/golang_todo/controller"
@@ -1152,8 +1152,18 @@ func main() <span class="cov0" title="0">{
 }</span>
 
 func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server controller.HTTPServer, cliApp cli.CLIApp) int <span class="cov8" title="1">{
-        // ctx := context.Background()
-        taskHolder, checkExit, exitCode := cliApp.AppStarter(newTaskHolder)
+        // Initialize with environment variables or defaults
+        port := os.Getenv("PORT")
+        if port == "" </span><span class="cov8" title="1">{
+                port = "8080"
+        }</span>
+
+        <span class="cov8" title="1">usersFile := os.Getenv("USERS_FILE")
+        if usersFile == "" </span><span class="cov8" title="1">{
+                usersFile = "users.json"
+        }</span>
+
+        <span class="cov8" title="1">taskHolder, checkExit, exitCode, isWeb := cliApp.AppStarter(newTaskHolder)
         if checkExit </span><span class="cov0" title="0">{
                 return exitCode
         }</span>
@@ -1161,49 +1171,107 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server c
         <span class="cov8" title="1">renderer, err := view.NewRenderer()
         if err != nil </span><span class="cov0" title="0">{
                 logger.Error.Printf("error starting view renderer")
+                return cli.ExitCodeError
         }</span>
+
         <span class="cov8" title="1">taskConcurrentService := internal.NewConcurrentTaskService(taskHolder)
         taskRenderHandler := controller.NewTaskRenderHandler(taskHolder, renderer)
-        userStore, err := users.NewUserStore("users.json")
-
-        api := controller.NewApiService(taskConcurrentService, userStore)
+        userStore, err := users.NewUserStore(usersFile)
         if err != nil </span><span class="cov0" title="0">{
                 logger.Error.Printf("error loading user store file")
                 return cli.ExitCodeError
         }</span>
-        <span class="cov8" title="1">authHandler := controller.NewAuthHandler(userStore)
-        go startHTTPServer(taskRenderHandler, server, api, authHandler)
 
-        returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
-        time.Sleep(100 * time.Millisecond) // waiting for startHttpGoroutine
-        return returnCode</span>
+        <span class="cov8" title="1">api := controller.NewApiService(taskConcurrentService, userStore)
+        authHandler := controller.NewAuthHandler(userStore)
+
+        // Setup shutdown channel
+        shutdownChan := make(chan struct{})
+        errChan := make(chan error, 1)
+        // Start HTTP server in goroutine
+        go func() </span><span class="cov8" title="1">{
+                if err := startHTTPServer(port, taskRenderHandler, server, api, authHandler); err != nil </span><span class="cov0" title="0">{
+                        logger.Error.Printf("Failed to start server: %v", err)
+                        errChan &lt;- err
+                }</span>
+        }()
+
+        // Handle graceful shutdown
+        <span class="cov8" title="1">go handleShutdown(shutdownChan)
+
+        // Run service
+        if isWeb </span><span class="cov0" title="0">{
+                logger.Info.Println("web flag provide")
+                select </span>{
+                case err := &lt;-errChan:<span class="cov0" title="0">
+                        logger.Error.Println(err)
+                        return cli.ExitCodeError</span>
+                case &lt;-shutdownChan:<span class="cov0" title="0">
+                        return cli.ExitCodeSuccess</span>
+                }
+        } else<span class="cov8" title="1"> {
+                logger.Info.Println("web flag not provided, cli and web app started")
+                cliDoneChan := make(chan int)
+
+                go func() </span><span class="cov8" title="1">{
+                        returnCode := cliApp.RunTaskManagmentCLI(taskHolder)
+                        cliDoneChan &lt;- returnCode
+                }</span>()
+                <span class="cov8" title="1">select </span>{
+                case returnCode := &lt;-cliDoneChan:<span class="cov8" title="1">
+                        close(shutdownChan)
+                        return returnCode</span>
+                case err := &lt;-errChan:<span class="cov0" title="0">
+                        logger.Error.Println(err)
+                        return cli.ExitCodeError</span>
+                case &lt;-shutdownChan:<span class="cov0" title="0">
+                        return cli.ExitCodeSuccess</span>
+                }
+        }
 }
 
-func startHTTPServer(taskHandler *controller.TaskRenderHandler, server controller.HTTPServer, api *controller.ApiService, authHandler *controller.AuthHandler) <span class="cov8" title="1">{
-
+func startHTTPServer(port string, taskHandler *controller.TaskRenderHandler, server controller.HTTPServer, api *controller.ApiService, authHandler *controller.AuthHandler) error <span class="cov8" title="1">{
         router := http.NewServeMux()
 
-        router.Handle("/api/", api) //why?
-        router.HandleFunc("GET /api/tasks", (api.GetAllPosts))
-        router.HandleFunc("GET /api/tasks/{id}", (api.GetTaskById))
+        router.HandleFunc("GET /api/tasks", api.GetAllPosts)
+        router.HandleFunc("GET /api/tasks/{id}", api.GetTaskById)
         router.HandleFunc("POST /api/tasks", mid.AuthMiddleware(api.CreateTask))
         router.HandleFunc("PUT /api/tasks/{id}", mid.AuthMiddleware(api.UpdateTask))
         router.HandleFunc("DELETE /api/tasks/{id}", mid.AuthMiddleware(api.DeleteTask))
 
-        router.HandleFunc("POST /login", (authHandler.LoginHandler))
-        router.HandleFunc("/logout", authHandler.LogoutHandler)
-        router.HandleFunc("GET /tasks/create", (mid.AuthMiddleware(taskHandler.HandleTaskCreate)))
-        router.HandleFunc("GET /tasks", (taskHandler.HandleTaskListRead))
-        router.HandleFunc("DELETE /tasks", (mid.AuthMiddleware(taskHandler.HandleTaskDelete)))
-        router.HandleFunc("/tasks/update", (mid.AuthMiddleware(taskHandler.HandleTaskUpdate)))
+        router.HandleFunc("POST /login", authHandler.LoginHandler)
+        router.HandleFunc("POST /logout", authHandler.LogoutHandler)
 
-        loggingHandler := mid.LoggingMiddleware{Next: router}
+        router.HandleFunc("GET /tasks/create", mid.AuthMiddleware(taskHandler.HandleTaskCreate))
+        router.HandleFunc("GET /tasks", taskHandler.HandleTaskListRead)
+        router.HandleFunc("DELETE /tasks", mid.AuthMiddleware(taskHandler.HandleTaskDelete))
+        router.HandleFunc("GET /tasks/update", mid.AuthMiddleware(taskHandler.HandleTaskUpdate))
+        router.HandleFunc("POST /tasks/update", mid.AuthMiddleware(taskHandler.HandleTaskUpdate))
 
-        logger.Info.Println("Starting server on :8080")
-        if err := server.ListenAndServe(":8080", loggingHandler); err != nil </span><span class="cov0" title="0">{
-                logger.Error.Fatalf("Failed to start server: %v", err)
-        }</span>
-        // defer server.Shutdown()
+        router.HandleFunc("GET /", taskHandler.HandleTaskListRead)
+
+        // Health check
+        router.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusOK)
+        }</span>)
+
+        <span class="cov8" title="1">loggingHandler := mid.LoggingMiddleware{Next: router}
+
+        logger.Info.Printf("Starting server on :%s", port)
+        return server.ListenAndServe(":"+port, loggingHandler)</span>
+}
+
+func handleShutdown(done chan struct{}) <span class="cov8" title="1">{
+        sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+
+        select </span>{
+        case &lt;-sigChan:<span class="cov0" title="0">
+                logger.Info.Println("Received shutdown signal")
+                done &lt;- struct{}{}</span>
+        case &lt;-done:<span class="cov8" title="1">
+                logger.Info.Println("Server stopped")</span>
+        }
 }
 </pre>
 		
@@ -1428,13 +1496,8 @@ func (ah *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) <spa
 }
 
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
-        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
-                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-                return
-        }</span>
-
         // Clear UserName cookie
-        <span class="cov0" title="0">http.SetCookie(w, &amp;http.Cookie{
+        http.SetCookie(w, &amp;http.Cookie{
                 Name:     "UserName",
                 Value:    "",
                 Path:     "/",
@@ -1457,8 +1520,8 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) <spa
 
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusOK)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Logout successful"})</span>
-}
+        json.NewEncoder(w).Encode(map[string]string{"message": "Logout successful"})
+}</span>
 </pre>
 		
 		<pre class="file" id="file9" style="display: none">package controller
@@ -1557,7 +1620,7 @@ func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Requ
 }</span>
 
 func (h *TaskRenderHandler) HandleTaskUpdate(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        // logger.Info.Printf("Handling %s request for task update from %s", r.Method, r.RemoteAddr)
+        logger.Info.Printf("Handling %s request for task update from %s", r.Method, r.RemoteAddr)
 
         taskID, err := getTaskIdFromQuery(r)
         if handleError(w, err, http.StatusBadRequest, "Invalid task ID") </span><span class="cov0" title="0">{
@@ -2321,7 +2384,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 case 3:<span class="cov8" title="1">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
-                case 4:<span class="cov0" title="0">
+                case 4:<span class="cov8" title="1">
                         taskValue = qualityTasks[rand.Intn(len(qualityTasks))]
                         category = Quality</span>
 

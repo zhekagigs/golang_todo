@@ -1,46 +1,14 @@
 {
-  "": {
-    "userName": "",
-    "userId": "e6ae0899-74d9-4a30-aa56-36ebb7b2f477"
-  },
   "AAA": {
     "userName": "AAA",
-    "userId": "25c5e443-d076-4210-ab0e-89b3fbdfead8"
+    "userId": "946ede74-ea21-4886-9633-daa2bd145ad8"
   },
-  "ASDF": {
-    "userName": "ASDF",
-    "userId": "93d86142-23bc-4672-bc74-542da897dc52"
+  "aaa": {
+    "userName": "aaa",
+    "userId": "600e7858-89c2-457d-93c0-70ab0008d501"
   },
-  "ASDFS": {
-    "userName": "ASDFS",
-    "userId": "e04a99a2-f84b-4010-bfc2-9037b3880618"
-  },
-  "BBB": {
-    "userName": "BBB",
-    "userId": "63643e9e-6ac7-44bb-afdc-21349c5bf4a6"
-  },
-  "CCC": {
-    "userName": "CCC",
-    "userId": "1ac66cf8-fde0-4750-89bc-98a39d94e6e2"
-  },
-  "DDD": {
-    "userName": "DDD",
-    "userId": "d359f4d9-3bbb-4a2b-ac12-0a10e691f522"
-  },
-  "Evgeny": {
-    "userName": "Evgeny",
-    "userId": "856d71cb-85c2-4999-a84e-200037fd528e"
-  },
-  "France": {
-    "userName": "France",
-    "userId": "208c0b87-b79e-41fb-a1b3-cd797ef584df"
-  },
-  "asdf": {
-    "userName": "asdf",
-    "userId": "5e21c460-2d25-49f4-978f-306f7319be6c"
-  },
-  "sofron": {
-    "userName": "sofron",
-    "userId": "76831d2d-c2c7-4c3c-a89c-787391056d2a"
+  "asdas": {
+    "userName": "asdas",
+    "userId": "262a529a-0335-4777-a36a-874541f2337a"
   }
 }

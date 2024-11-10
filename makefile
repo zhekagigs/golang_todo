@@ -9,12 +9,17 @@ COVERAGE_FILE=coverage.out
 HTML_COVERAGE=coverage.html
 GOLINT=golangci-lint
 SRC_DIRS=./...
-VERSION := $(shell git describe --tags --always --dirty)
-# LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 MAIN_PACKAGE := ./cmd
+
+# Version handling that won't fail if git is not available
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "unknown")
+LDFLAGS := -ldflags="-w -s -X main.version=$(VERSION)"
 
 .DEFAULT_GOAL := help
 
+# Fix the duplicate build-linux target and ensure proper flags
+build-linux:
+	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PACKAGE)
 all: fmt vet lint test coverage build
 
 build:
@@ -58,9 +63,6 @@ docker:
 generate:
 	$(GOCMD) generate $(SRC_DIRS)
 
-# Cross compilation
-build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME)_linux -v
 
 build-windows:
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME)_windows.exe -v

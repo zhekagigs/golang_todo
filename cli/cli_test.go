@@ -544,7 +544,7 @@ func TestMainAndPrintHelp(t *testing.T) {
 			flag.CommandLine = flag.NewFlagSet(tt.args[0], flag.ContinueOnError)
 			os.Args = tt.args
 			cliApp := &RealCLIApp{}
-			_, _, actualExit := cliApp.AppStarter(in.MockNewTaskHolder)
+			_, _, actualExit, _ := cliApp.AppStarter(in.MockNewTaskHolder)
 
 			// Close the write end of the pipe
 			write.Close()

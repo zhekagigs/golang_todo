@@ -67,7 +67,7 @@ func (h *TaskRenderHandler) HandleTaskCreate(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *TaskRenderHandler) HandleTaskUpdate(w http.ResponseWriter, r *http.Request) {
-	// logger.Info.Printf("Handling %s request for task update from %s", r.Method, r.RemoteAddr)
+	logger.Info.Printf("Handling %s request for task update from %s", r.Method, r.RemoteAddr)
 
 	taskID, err := getTaskIdFromQuery(r)
 	if handleError(w, err, http.StatusBadRequest, "Invalid task ID") {

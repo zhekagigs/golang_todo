@@ -69,11 +69,6 @@ func (ah *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Clear UserName cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "UserName",
