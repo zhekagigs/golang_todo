@@ -59,13 +59,19 @@ func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHo
 	if isHelp {
 		return nil, isExit, exitCode, isWeb
 	}
-	PrintCLITitle(savedTasks)
-
-	taskHolder, err := PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
-	if err != nil {
-		fmt.Printf("Error populating task holder: %v\n", err)
-		return nil, true, ExitCodeError, isWeb
+	var taskHolder *in.TaskHolder
+	if !isWeb {
+		var err error
+		taskHolder, err = PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
+		if err != nil {
+			fmt.Printf("Error populating task holder: %v\n", err)
+			return nil, true, ExitCodeError, isWeb
+		}
+	} else {
+		taskHolder = newTaskHolder(fileName)
 	}
+	PrintCLITitle(taskHolder.Tasks)
+
 	return taskHolder, false, ExitCodeSuccess, isWeb
 }
 
@@ -80,11 +86,7 @@ func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder fun
 		fileName = "resources/tasks.json"
 	}
 	taskHolder := newTaskHolder(fileName)
-	// var maxId int TODO ?
 	for _, task := range savedTasks {
-		// if task.Id > maxId {
-		// 	maxId = task.Id
-		// }
 		taskHolder.Add(task)
 	}
 	return taskHolder, nil

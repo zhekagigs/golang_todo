@@ -24,17 +24,17 @@ type TaskRepository interface {
 }
 
 type GCSRepository struct {
-	bucketName   string
-	objectName   string
-	client       *storage.Client
-	clientCtx    context.Context
-	credentials  string
+	bucketName  string
+	objectName  string
+	client      *storage.Client
+	clientCtx   context.Context
+	credentials string
 }
 
 type GCSConfig struct {
 	BucketName string
 	ObjectName string
-	APIKey string
+	APIKey     string
 }
 
 func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFile string) (*GCSRepository, error) {
@@ -45,15 +45,15 @@ func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFi
 	}
 
 	return &GCSRepository{
-		bucketName:   bucketName,
-		objectName:   objectName,
-		client:       client,
-		clientCtx:    ctx,
-		credentials:  credentialsFile,
+		bucketName:  bucketName,
+		objectName:  objectName,
+		client:      client,
+		clientCtx:   ctx,
+		credentials: credentialsFile,
 	}, nil
 }
 
-func (r * GCSRepository) Close() error {
+func (r *GCSRepository) Close() error {
 	return r.client.Close()
 }
 
@@ -115,10 +115,10 @@ func (r *GCSRepository) LoadTasks() ([]internal.Task, error) {
 	if err := json.Unmarshal(data, &tasks); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal tasks: %v", err)
 	}
+	fmt.Println(tasks)
 
 	return tasks, nil
 }
-
 
 // GetGCSConfig returns bucket configuration from environment variables
 func GetGCSConfig() (string, string, error) {

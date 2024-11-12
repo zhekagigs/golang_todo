@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/zhekagigs/golang_todo/cli"
@@ -12,12 +15,79 @@ import (
 	"github.com/zhekagigs/golang_todo/internal"
 	"github.com/zhekagigs/golang_todo/logger"
 	mid "github.com/zhekagigs/golang_todo/middleware"
+	"github.com/zhekagigs/golang_todo/repository"
 	"github.com/zhekagigs/golang_todo/users"
 	"github.com/zhekagigs/golang_todo/view"
 )
 
 func main() {
-	os.Exit(RealMain(internal.NewTaskHolder, &controller.RealHTTPServer{}, &cli.RealCLIApp{}))
+	err, repo := configureRepo()
+	if err != nil {
+		logger.Error.Printf("Failed to create repository: %v", err)
+		os.Exit(1)
+	}
+	defer repo.Close()
+
+	// Load initial tasks from GCS
+	taskHolder := loadTasks(repo)
+
+	// Start the application if GCP
+	os.Exit(RealMain(
+		func(string) *internal.TaskHolder { return taskHolder },
+		&controller.RealHTTPServer{},
+		&cli.RealCLIApp{},
+	))
+
+	// Start app if local JSON storage
+	// os.Exit(RealMain(internal.NewTaskHolder, &controller.RealHTTPServer{}, &cli.RealCLIApp{}))
+}
+
+func loadTasks(repo *repository.GCSRepository) *internal.TaskHolder {
+	tasks, err := repo.LoadTasks()
+	if err != nil {
+		logger.Error.Printf("Failed to load tasks: %v", err)
+		os.Exit(1)
+	}
+
+	taskHolder := internal.NewTaskHolder("")
+	for _, task := range tasks {
+		taskHolder.Add(task)
+	}
+	return taskHolder
+}
+
+// Get GCS configuration.
+// Get credentials path.
+// Initialize GCS repository.
+func configureRepo() (error, *repository.GCSRepository) {
+	ctx := context.Background()
+	// Set up GCS environment variables for tests
+	bucketName := "go-todo-app-json-storage"
+	objectName := "test-tasks.json"
+
+	os.Setenv("GCS_BUCKET_NAME", bucketName)
+	os.Setenv("GCS_OBJECT_NAME", objectName)
+
+	bucketName, objectName, err := repository.GetGCSConfig()
+	if err != nil {
+		logger.Error.Printf("Failed to get GCS config: %v", err)
+		os.Exit(1)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logger.Error.Printf("Failed to get home directory: %v", err)
+		os.Exit(1)
+	}
+
+	credsPath := filepath.Join(homeDir, ".config", "gcloud", "application_default_credentials.json")
+	if _, err := os.Stat(credsPath); os.IsNotExist(err) {
+		log.Printf("Credentials file not found at %s - run 'gcloud auth application-default login' first", credsPath)
+		os.Exit(1)
+	}
+
+	repo, err := repository.NewGCSRepository(ctx, bucketName, objectName, credsPath)
+	return err, repo
 }
 
 func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server controller.HTTPServer, cliApp cli.CLIApp) int {
