@@ -85,7 +85,7 @@
 				
 				<option value="file14">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
 				
-				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (92.3%)</option>
+				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (82.7%)</option>
 				
 				<option value="file16">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
 				
@@ -93,9 +93,11 @@
 				
 				<option value="file18">github.com/zhekagigs/golang_todo/middleware/middleware.go (50.0%)</option>
 				
-				<option value="file19">github.com/zhekagigs/golang_todo/users/users.go (50.0%)</option>
+				<option value="file19">github.com/zhekagigs/golang_todo/repository/repository.go (83.7%)</option>
 				
-				<option value="file20">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
+				<option value="file20">github.com/zhekagigs/golang_todo/users/users.go (50.0%)</option>
+				
+				<option value="file21">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
 				
 				</select>
 			</div>
@@ -2359,7 +2361,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 var category TaskCategory
                 x := rand.Intn(5)
                 switch x </span>{
-                case 0:<span class="cov8" title="1">
+                case 0:<span class="cov0" title="0">
                         verb := brewingVerbs[rand.Intn(len(brewingVerbs))]
                         adj := adjectives[rand.Intn(len(adjectives))]
                         noun := beerTypes[rand.Intn(len(beerTypes))]
@@ -2630,7 +2632,144 @@ type customResponseWriter struct {
 }
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package users
+		<pre class="file" id="file19" style="display: none">package repository
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "os"
+        "time"
+
+        "cloud.google.com/go/storage"
+        "github.com/zhekagigs/golang_todo/internal"
+        "google.golang.org/api/option"
+)
+
+const (
+        EnvGoogleAPIKey = "GOOGLE_API_KEY"
+        EnvBucketName   = "GCS_BUCKET_NAME"
+)
+
+type TaskRepository interface {
+        SaveTasks(tasks []internal.Task) error
+        LoadTasks() ([]internal.Task, error)
+}
+
+type GCSRepository struct {
+        bucketName  string
+        objectName  string
+        client      *storage.Client
+        clientCtx   context.Context
+        credentials string
+}
+
+type GCSConfig struct {
+        BucketName string
+        ObjectName string
+        APIKey     string
+}
+
+func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFile string) (*GCSRepository, error) <span class="cov8" title="1">{
+
+        client, err := storage.NewClient(ctx, option.WithCredentialsFile(credentialsFile))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create storage client: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;GCSRepository{
+                bucketName:  bucketName,
+                objectName:  objectName,
+                client:      client,
+                clientCtx:   ctx,
+                credentials: credentialsFile,
+        }, nil</span>
+}
+
+func (r *GCSRepository) Close() error <span class="cov8" title="1">{
+        return r.client.Close()
+}</span>
+
+// SaveTasks saves tasks to a JSON file in GCS bucket
+func (r *GCSRepository) SaveTasks(tasks []internal.Task) error <span class="cov8" title="1">{
+        bucket := r.client.Bucket(r.bucketName)
+        obj := bucket.Object(r.objectName)
+
+        // Create a new context with timeout for the upload operation
+        ctx, cancel := context.WithTimeout(r.clientCtx, time.Minute)
+        defer cancel()
+
+        writer := obj.NewWriter(ctx)
+        writer.ContentType = "application/json"
+
+        // Marshal tasks to JSON
+        data, err := json.MarshalIndent(tasks, "", "  ")
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to marshal tasks: %v", err)
+        }</span>
+
+        // Write data
+        <span class="cov8" title="1">if _, err := writer.Write(data); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to write to GCS: %v", err)
+        }</span>
+
+        // Close writer
+        <span class="cov8" title="1">if err := writer.Close(); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to close writer: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// LoadTasks loads tasks from a JSON file in GCS bucket
+func (r *GCSRepository) LoadTasks() ([]internal.Task, error) <span class="cov8" title="1">{
+        bucket := r.client.Bucket(r.bucketName)
+        obj := bucket.Object(r.objectName)
+
+        ctx, cancel := context.WithTimeout(r.clientCtx, time.Minute)
+        defer cancel()
+
+        reader, err := obj.NewReader(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                if err == storage.ErrObjectNotExist </span><span class="cov8" title="1">{
+                        // If the file doesn't exist, return an empty task list
+                        return []internal.Task{}, nil
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to create reader: %v", err)</span>
+        }
+        <span class="cov8" title="1">defer reader.Close()
+
+        data, err := io.ReadAll(reader)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to read from GCS: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">var tasks []internal.Task
+        if err := json.Unmarshal(data, &amp;tasks); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal tasks: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return tasks, nil</span>
+}
+
+// GetGCSConfig returns bucket configuration from environment variables
+func GetGCSConfig() (string, string, error) <span class="cov8" title="1">{
+        bucketName := os.Getenv("GCS_BUCKET_NAME")
+        if bucketName == "" </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("GCS_BUCKET_NAME environment variable not set")
+        }</span>
+
+        <span class="cov8" title="1">objectName := os.Getenv("GCS_OBJECT_NAME")
+        if objectName == "" </span><span class="cov8" title="1">{
+                objectName = "tasks.json" // Default value
+        }</span>
+
+        <span class="cov8" title="1">return bucketName, objectName, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package users
 
 import (
         "encoding/json"
@@ -2714,7 +2853,7 @@ func (s *UserStore) GetUserById(userId string) (User, bool) <span class="cov8" t
 }
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package view
+		<pre class="file" id="file21" style="display: none">package view
 
 import (
         "embed"

@@ -41,3 +41,5 @@ Read all tasks
 Get specific task, ids are ints.  
 `http GET localhost:8080/api/tasks/{id}`
 
+ # Google Cloud Storage
+ When cloud run shuts down ephemeral container, in memory data should be saved into google bucket as JSON file.

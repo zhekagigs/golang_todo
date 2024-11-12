@@ -2,3 +2,5 @@
 .vscode
 .idea
 controller/resources/concurrent_disk.json
+coverage.html
+coverage.out

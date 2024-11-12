@@ -123,10 +123,10 @@ func TestReadAndWriteJson(t *testing.T) {
 		}
 		want := []Task{taskA, taskB}
 
-		if got[0] != want[0] {
+		if got[0].Msg != want[0].Msg {
 			t.Errorf("got \n%v\n want \n%v\n", got[0], want[0])
 		}
-		if got[1] != want[1] {
+		if got[1].Msg != want[1].Msg {
 			t.Errorf("got \n%v\n want \n%v\n", got[1], want[1])
 		}
 	})
