@@ -4,4 +4,8 @@ notes.MD
 controller/resources/concurrent_disk.json
 analytics/resources
 .DS_Store
-
+cloud-run.sh
+users.json
+coverage.out
+internal/resources/cli_disk_test.json
+internal/resources/tesk_tasks.json

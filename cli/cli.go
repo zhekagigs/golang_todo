@@ -31,7 +31,7 @@ const (
 )
 
 type CLIApp interface {
-	AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int)
+	AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int, bool)
 	RunTaskManagmentCLI(taskHolder *in.TaskHolder) int
 }
 
@@ -54,19 +54,25 @@ func (cli *RealCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
 	}
 }
 
-func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int) {
-	fileName, savedTasks, isHelp, isExit, exitCode := ParseUserArg()
+func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int, bool) {
+	fileName, savedTasks, isHelp, isExit, exitCode, isWeb := ParseUserArg()
 	if isHelp {
-		return nil, isExit, exitCode
+		return nil, isExit, exitCode, isWeb
 	}
-	PrintCLITitle(savedTasks)
+	var taskHolder *in.TaskHolder
+	if !isWeb {
+		var err error
+		taskHolder, err = PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
+		if err != nil {
+			fmt.Printf("Error populating task holder: %v\n", err)
+			return nil, true, ExitCodeError, isWeb
+		}
+	} else {
+		taskHolder = newTaskHolder(fileName)
+	}
+	PrintCLITitle(taskHolder.Tasks)
 
-	taskHolder, err := PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
-	if err != nil {
-		fmt.Printf("Error populating task holder: %v\n", err)
-		return nil, true, ExitCodeError
-	}
-	return taskHolder, false, ExitCodeSuccess
+	return taskHolder, false, ExitCodeSuccess, isWeb
 }
 
 func PrintCLITitle(savedTasks []in.Task) {
@@ -77,35 +83,31 @@ func PrintCLITitle(savedTasks []in.Task) {
 
 func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, error) {
 	if fileName == "" {
-		fileName = "resources/disk.json"
+		fileName = "resources/tasks.json"
 	}
 	taskHolder := newTaskHolder(fileName)
-	// var maxId int TODO ?
 	for _, task := range savedTasks {
-		// if task.Id > maxId {
-		// 	maxId = task.Id
-		// }
 		taskHolder.Add(task)
 	}
 	return taskHolder, nil
 }
 
-func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit bool, exitCode int) {
+func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit bool, exitCode int, isWebFlag bool) {
 	helpFlag := flag.Bool("h", false, "Help is here")
-
+	webFlag := flag.Bool("web", false, "Avoids using CLI")
 	flag.Usage = PrintHelp
 
 	flag.Parse()
 
 	if *helpFlag {
 		flag.Usage()
-		return "", nil, true, true, ExitCodeSuccess
+		return "", nil, *helpFlag, true, ExitCodeSuccess, *webFlag
 	}
 
 	if flag.NArg() < 1 {
 		fmt.Println("Error: JSON file path is required")
 		flag.Usage()
-		return "", nil, true, true, ExitCodeError
+		return "", nil, true, true, ExitCodeError, *webFlag
 	}
 
 	fileName = flag.Arg(0)
@@ -118,9 +120,9 @@ func ParseUserArg() (fileName string, savedTasks []in.Task, isHelp bool, isExit 
 			fmt.Printf("Error while reading json file: %v\n", err)
 		}
 		flag.Usage()
-		return "", nil, true, true, ExitCodeError
+		return "", nil, true, true, ExitCodeError, *webFlag
 	}
-	return fileName, savedTasks, false, false, ExitCodeSuccess
+	return fileName, savedTasks, false, false, ExitCodeSuccess, *webFlag
 }
 
 func PrintHelp() {

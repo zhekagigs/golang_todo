@@ -28,10 +28,10 @@ type MockCLIApp struct {
 	RunCLICalled     bool
 }
 
-func (cli *MockCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int) {
+func (cli *MockCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHolder) (*in.TaskHolder, bool, int, bool) {
 	cli.AppStarterCalled = true
 	taskHolder := in.MockNewTaskHolder("")
-	return taskHolder, false, 0
+	return taskHolder, false, 0, false
 }
 
 func (cli *MockCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {

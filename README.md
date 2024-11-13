@@ -2,7 +2,7 @@
 
 Microbrewery task managment system.
 
-To build run `make build`. To run `./myapp tasks.json`. Server will start CLI interface in terminal, web interface on localhost:8080 and  
+To build run `make build`. To run `./myapp internal/resources/tasks.json`. Server will start CLI interface in terminal, web interface on localhost:8080 and  
 api available on `localhost:8080/api`.  
 App should be run with one argument, that specifies path to json file that serves as permanent storage of tasks between sessions.  
 Previously loaded task will be pre-loaded into an app and app will run in interactive mode with a number commands available. After `exit` command issued all in-memory state will be dumped into `disk.json` file.
@@ -41,4 +41,5 @@ Read all tasks
 Get specific task, ids are ints.  
 `http GET localhost:8080/api/tasks/{id}`
 
-# Heroku deployemnt
+ # Google Cloud Storage
+ When cloud run shuts down ephemeral container, in memory data should be saved into google bucket as JSON file.
