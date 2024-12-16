@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/zhekagigs/golang_todo/internal"
+	"github.com/zhekagigs/golang_todo/logger"
 	"google.golang.org/api/option"
 )
 
@@ -37,6 +40,39 @@ type GCSConfig struct {
 	APIKey     string
 }
 
+// Get GCS configuration.
+// Get credentials path.
+// Initialize GCS repository.
+func ConfigureRepo() (*GCSRepository, error) {
+	ctx := context.Background()
+	// Set up GCS environment variables for tests
+	bucketName := "go-todo-app-json-storage"
+	objectName := "test-tasks.json"
+
+	os.Setenv("GCS_BUCKET_NAME", bucketName)
+	os.Setenv("GCS_OBJECT_NAME", objectName)
+
+	bucketName, objectName, err := GetGCSConfig()
+	if err != nil {
+		logger.Error.Printf("Failed to get GCS config: %v", err)
+		os.Exit(1)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logger.Error.Printf("Failed to get home directory: %v", err)
+		os.Exit(1)
+	}
+
+	credsPath := filepath.Join(homeDir, ".config", "gcloud", "application_default_credentials.json")
+	if _, err := os.Stat(credsPath); os.IsNotExist(err) {
+		log.Printf("Credentials file not found at %s - run 'gcloud auth application-default login' first", credsPath)
+		os.Exit(1)
+	}
+
+	repo, err := NewGCSRepository(ctx, bucketName, objectName, credsPath)
+	return repo, err
+}
 func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFile string) (*GCSRepository, error) {
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(credentialsFile))
@@ -99,7 +135,6 @@ func (r *GCSRepository) LoadTasks() ([]internal.Task, error) {
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
 		if err == storage.ErrObjectNotExist {
-			// If the file doesn't exist, return an empty task list
 			return []internal.Task{}, nil
 		}
 		return nil, fmt.Errorf("failed to create reader: %v", err)
@@ -129,7 +164,7 @@ func GetGCSConfig() (string, string, error) {
 
 	objectName := os.Getenv("GCS_OBJECT_NAME")
 	if objectName == "" {
-		objectName = "tasks.json" // Default value
+		return "", "", fmt.Errorf("no gcs object provided")
 	}
 
 	return bucketName, objectName, nil

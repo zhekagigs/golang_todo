@@ -1,45 +1,106 @@
-# golang_todo
+# Task Management System
 
-Microbrewery task managment system.
+A microservice-based task management system built in Go.
 
-To build run `make build`. To run `./myapp internal/resources/tasks.json`. Server will start CLI interface in terminal, web interface on localhost:8080 and  
-api available on `localhost:8080/api`.  
-App should be run with one argument, that specifies path to json file that serves as permanent storage of tasks between sessions.  
-Previously loaded task will be pre-loaded into an app and app will run in interactive mode with a number commands available. After `exit` command issued all in-memory state will be dumped into `disk.json` file.
+## Overview
 
-Notes
+This application provides a comprehensive task management solution with multiple interfaces:
 
-Check `makefile` for other commands.
-App runs similtuneosly as CLI and Web interfaces.
+- Command Line Interface (CLI)
+- Web Interface (localhost:8080)
+- REST API (localhost:8080/api)
+
+## Installation
+
+Build the application using:
+
+make build
 
 
-# Code Structure Notes.
+## Usage
 
-Main object is `Task` which gets aggregated into `TasksHolder` with CRUD operations available.  
-CLI supports interactive mode with available Commands: read, create, update, delete, exit, search, find.
-Internals logic around tasks supported with cli, frontend and rest interafaces.
-Using `html/templates` to serve front-end on base of standart `net/http` server.
-Using `embed` package to integrate asset files in a binary, which creates internal read-only file system.
-Middleware process context for user access and adds logger wrapper to all handlers. 
-Concurrent user access supportet with simple locks on tasks. 
-Worker pool is implemented but not yet used for tasks analytics jobs.
+Run the application with:
 
-# Test
-Run `make all` to test with coverage and then `open coverage.html` to see visually appealing report.
-I had a git hook in pre-commit for `.git` that runs command each commit, which will contain latest test coverage report.
+./myapp internal/resources/tasks.json
 
-# Run 
-`make build && ./myapp internal/resources/disk.json` . 
-To run the app, which will start both CLI and http server on `localhost:8080/tasks`.
 
-# API
-Api request can be done like this using http pie for example.   
-Create task   
-`http POST localhost:8080/api/tasks/4 Authorization:208c0b87-b79e-41fb-a1b3-cd797ef584df Done:=false Msg="Updated Message" Category:=1 PlannedAt="2026-01-02T15:04:05Z"`
-Read all tasks  
-`http GET localhost:8080/api/tasks`
-Get specific task, ids are ints.  
-`http GET localhost:8080/api/tasks/{id}`
+The application requires a JSON file path as an argument, which serves as persistent storage between sessions. Tasks are loaded from this file at startup, and all changes are saved to disk when exiting.
 
- # Google Cloud Storage
- When cloud run shuts down ephemeral container, in memory data should be saved into google bucket as JSON file.
+## Features
+
+- Multi-interface support (CLI, Web, API)
+- Persistent storage
+- Interactive command mode
+- Concurrent user access
+- Task CRUD operations
+- Search functionality
+
+## Architecture
+
+### Core Components
+
+- **Task**: Primary data structure
+- **TasksHolder**: Aggregator with CRUD operations
+- **Interfaces**: CLI, Web Frontend, and REST API
+- **Storage**: JSON-based persistence
+- **Security**: Middleware for user access and logging
+- **Concurrency**: Lock-based task management
+- **Worker Pool**: Infrastructure for future analytics
+
+### Technical Details
+
+- Built using standard Go packages (`html/templates`, `net/http`)
+- Embedded assets using Go's `embed` package
+- Middleware for context processing and logging
+- Concurrent access management
+- RESTful API implementation
+
+## Testing
+
+Execute the test suite:
+
+make all
+
+
+View coverage report:
+
+open coverage.html
+
+
+Automated test coverage reports are generated on each commit via git hooks.
+
+## API Documentation
+
+### Endpoints
+
+#### Create Task
+
+POST localhost:8080/api/tasks/{id}
+Authorization: 208c0b87-b79e-41fb-a1b3-cd797ef584df
+Content-Type: application/json
+
+{
+    "Done": false,
+    "Msg": "Task Message",
+    "Category": 1,
+    "PlannedAt": "2026-01-02T15:04:05Z"
+}
+
+
+#### Read All Tasks
+
+GET localhost:8080/api/tasks
+
+
+#### Read Specific Task
+
+GET localhost:8080/api/tasks/{id}
+
+
+## Cloud Infrastructure
+
+The application is designed to work with Google Cloud Storage, automatically persisting in-memory data to Google Cloud Storage buckets when running in Cloud Run containers.
+
+## Development
+
+For additional development commands, refer to the `makefile`.

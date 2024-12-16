@@ -67,7 +67,7 @@
 				
 				<option value="file5">github.com/zhekagigs/golang_todo/cli/cli.go (72.6%)</option>
 				
-				<option value="file6">github.com/zhekagigs/golang_todo/cmd/main.go (73.2%)</option>
+				<option value="file6">github.com/zhekagigs/golang_todo/cmd/main.go (60.5%)</option>
 				
 				<option value="file7">github.com/zhekagigs/golang_todo/controller/api.go (22.9%)</option>
 				
@@ -85,7 +85,7 @@
 				
 				<option value="file14">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
 				
-				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (82.7%)</option>
+				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (80.8%)</option>
 				
 				<option value="file16">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
 				
@@ -93,9 +93,9 @@
 				
 				<option value="file18">github.com/zhekagigs/golang_todo/middleware/middleware.go (50.0%)</option>
 				
-				<option value="file19">github.com/zhekagigs/golang_todo/repository/repository.go (83.7%)</option>
+				<option value="file19">github.com/zhekagigs/golang_todo/repository/bucket.go (57.1%)</option>
 				
-				<option value="file20">github.com/zhekagigs/golang_todo/users/users.go (50.0%)</option>
+				<option value="file20">github.com/zhekagigs/golang_todo/users/users.go (93.3%)</option>
 				
 				<option value="file21">github.com/zhekagigs/golang_todo/view/view.go (94.7%)</option>
 				
@@ -823,14 +823,20 @@ func (cli *RealCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHo
         if isHelp </span><span class="cov8" title="1">{
                 return nil, isExit, exitCode, isWeb
         }</span>
-        <span class="cov8" title="1">PrintCLITitle(savedTasks)
-
-        taskHolder, err := PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
-        if err != nil </span><span class="cov0" title="0">{
-                fmt.Printf("Error populating task holder: %v\n", err)
-                return nil, true, ExitCodeError, isWeb
+        <span class="cov8" title="1">var taskHolder *in.TaskHolder
+        if !isWeb </span><span class="cov8" title="1">{
+                var err error
+                taskHolder, err = PopulateTaskHolder(fileName, savedTasks, newTaskHolder)
+                if err != nil </span><span class="cov0" title="0">{
+                        fmt.Printf("Error populating task holder: %v\n", err)
+                        return nil, true, ExitCodeError, isWeb
+                }</span>
+        } else<span class="cov0" title="0"> {
+                taskHolder = newTaskHolder(fileName)
         }</span>
-        <span class="cov8" title="1">return taskHolder, false, ExitCodeSuccess, isWeb</span>
+        <span class="cov8" title="1">PrintCLITitle(taskHolder.Tasks)
+
+        return taskHolder, false, ExitCodeSuccess, isWeb</span>
 }
 
 func PrintCLITitle(savedTasks []in.Task) <span class="cov8" title="1">{
@@ -844,11 +850,7 @@ func PopulateTaskHolder(fileName string, savedTasks []in.Task, newTaskHolder fun
                 fileName = "resources/tasks.json"
         }</span>
         <span class="cov8" title="1">taskHolder := newTaskHolder(fileName)
-        // var maxId int TODO ?
         for _, task := range savedTasks </span><span class="cov8" title="1">{
-                // if task.Id &gt; maxId {
-                //         maxId = task.Id
-                // }
                 taskHolder.Add(task)
         }</span>
         <span class="cov8" title="1">return taskHolder, nil</span>
@@ -1145,13 +1147,46 @@ import (
         "github.com/zhekagigs/golang_todo/internal"
         "github.com/zhekagigs/golang_todo/logger"
         mid "github.com/zhekagigs/golang_todo/middleware"
+        "github.com/zhekagigs/golang_todo/repository"
         "github.com/zhekagigs/golang_todo/users"
         "github.com/zhekagigs/golang_todo/view"
 )
 
 func main() <span class="cov0" title="0">{
-        os.Exit(RealMain(internal.NewTaskHolder, &amp;controller.RealHTTPServer{}, &amp;cli.RealCLIApp{}))
-}</span>
+        repo, err := repository.ConfigureRepo()
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error.Printf("Failed to create repository: %v", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer repo.Close()
+
+        // Load initial tasks from GCS
+        taskHolder := loadTasks(repo)
+
+        // Start the application if GCP
+        os.Exit(RealMain(
+                func(string) *internal.TaskHolder </span><span class="cov0" title="0">{ return taskHolder }</span>,
+                &amp;controller.RealHTTPServer{},
+                &amp;cli.RealCLIApp{},
+        ))
+
+        // Start app if local JSON storage
+        // os.Exit(RealMain(internal.NewTaskHolder, &amp;controller.RealHTTPServer{}, &amp;cli.RealCLIApp{}))
+}
+
+func loadTasks(repo *repository.GCSRepository) *internal.TaskHolder <span class="cov0" title="0">{
+        tasks, err := repo.LoadTasks()
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error.Printf("Failed to load tasks: %v", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">taskHolder := internal.NewTaskHolder("")
+        for _, task := range tasks </span><span class="cov0" title="0">{
+                taskHolder.Add(task)
+        }</span>
+        <span class="cov0" title="0">return taskHolder</span>
+}
 
 func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server controller.HTTPServer, cliApp cli.CLIApp) int <span class="cov8" title="1">{
         // Initialize with environment variables or defaults
@@ -1234,22 +1269,21 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server c
 
 func startHTTPServer(port string, taskHandler *controller.TaskRenderHandler, server controller.HTTPServer, api *controller.ApiService, authHandler *controller.AuthHandler) error <span class="cov8" title="1">{
         router := http.NewServeMux()
-
+        // api routes
         router.HandleFunc("GET /api/tasks", api.GetAllPosts)
         router.HandleFunc("GET /api/tasks/{id}", api.GetTaskById)
         router.HandleFunc("POST /api/tasks", mid.AuthMiddleware(api.CreateTask))
         router.HandleFunc("PUT /api/tasks/{id}", mid.AuthMiddleware(api.UpdateTask))
         router.HandleFunc("DELETE /api/tasks/{id}", mid.AuthMiddleware(api.DeleteTask))
-
+        // auth routes
         router.HandleFunc("POST /login", authHandler.LoginHandler)
         router.HandleFunc("POST /logout", authHandler.LogoutHandler)
-
+        // view routes
         router.HandleFunc("GET /tasks/create", mid.AuthMiddleware(taskHandler.HandleTaskCreate))
         router.HandleFunc("GET /tasks", taskHandler.HandleTaskListRead)
         router.HandleFunc("DELETE /tasks", mid.AuthMiddleware(taskHandler.HandleTaskDelete))
         router.HandleFunc("GET /tasks/update", mid.AuthMiddleware(taskHandler.HandleTaskUpdate))
         router.HandleFunc("POST /tasks/update", mid.AuthMiddleware(taskHandler.HandleTaskUpdate))
-
         router.HandleFunc("GET /", taskHandler.HandleTaskListRead)
 
         // Health check
@@ -1263,6 +1297,7 @@ func startHTTPServer(port string, taskHandler *controller.TaskRenderHandler, ser
         return server.ListenAndServe(":"+port, loggingHandler)</span>
 }
 
+// gracefult shutdown handling
 func handleShutdown(done chan struct{}) <span class="cov8" title="1">{
         sigChan := make(chan os.Signal, 1)
         signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
@@ -1272,7 +1307,7 @@ func handleShutdown(done chan struct{}) <span class="cov8" title="1">{
                 logger.Info.Println("Received shutdown signal")
                 done &lt;- struct{}{}</span>
         case &lt;-done:<span class="cov8" title="1">
-                logger.Info.Println("Server stopped")</span>
+                logger.Info.Println("Server stopped via done channel")</span>
         }
 }
 </pre>
@@ -2375,7 +2410,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
                         quantity := rand.Intn(500) + 1 // 1 to 500
                         unit := "kg"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 unit = "lbs"
                         }</span>
                         <span class="cov8" title="1">taskValue = fmt.Sprintf("%s %d %s of %s", verb, quantity, unit, ingredient)
@@ -2639,11 +2674,14 @@ import (
         "encoding/json"
         "fmt"
         "io"
+        "log"
         "os"
+        "path/filepath"
         "time"
 
         "cloud.google.com/go/storage"
         "github.com/zhekagigs/golang_todo/internal"
+        "github.com/zhekagigs/golang_todo/logger"
         "google.golang.org/api/option"
 )
 
@@ -2671,6 +2709,39 @@ type GCSConfig struct {
         APIKey     string
 }
 
+// Get GCS configuration.
+// Get credentials path.
+// Initialize GCS repository.
+func ConfigureRepo() (*GCSRepository, error) <span class="cov0" title="0">{
+        ctx := context.Background()
+        // Set up GCS environment variables for tests
+        bucketName := "go-todo-app-json-storage"
+        objectName := "test-tasks.json"
+
+        os.Setenv("GCS_BUCKET_NAME", bucketName)
+        os.Setenv("GCS_OBJECT_NAME", objectName)
+
+        bucketName, objectName, err := GetGCSConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error.Printf("Failed to get GCS config: %v", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">homeDir, err := os.UserHomeDir()
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error.Printf("Failed to get home directory: %v", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">credsPath := filepath.Join(homeDir, ".config", "gcloud", "application_default_credentials.json")
+        if _, err := os.Stat(credsPath); os.IsNotExist(err) </span><span class="cov0" title="0">{
+                log.Printf("Credentials file not found at %s - run 'gcloud auth application-default login' first", credsPath)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">repo, err := NewGCSRepository(ctx, bucketName, objectName, credsPath)
+        return repo, err</span>
+}
 func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFile string) (*GCSRepository, error) <span class="cov8" title="1">{
 
         client, err := storage.NewClient(ctx, option.WithCredentialsFile(credentialsFile))
@@ -2733,7 +2804,6 @@ func (r *GCSRepository) LoadTasks() ([]internal.Task, error) <span class="cov8" 
         reader, err := obj.NewReader(ctx)
         if err != nil </span><span class="cov8" title="1">{
                 if err == storage.ErrObjectNotExist </span><span class="cov8" title="1">{
-                        // If the file doesn't exist, return an empty task list
                         return []internal.Task{}, nil
                 }</span>
                 <span class="cov0" title="0">return nil, fmt.Errorf("failed to create reader: %v", err)</span>
@@ -2749,8 +2819,9 @@ func (r *GCSRepository) LoadTasks() ([]internal.Task, error) <span class="cov8" 
         if err := json.Unmarshal(data, &amp;tasks); err != nil </span><span class="cov0" title="0">{
                 return nil, fmt.Errorf("failed to unmarshal tasks: %v", err)
         }</span>
+        <span class="cov8" title="1">fmt.Println(tasks)
 
-        <span class="cov8" title="1">return tasks, nil</span>
+        return tasks, nil</span>
 }
 
 // GetGCSConfig returns bucket configuration from environment variables
@@ -2761,8 +2832,8 @@ func GetGCSConfig() (string, string, error) <span class="cov8" title="1">{
         }</span>
 
         <span class="cov8" title="1">objectName := os.Getenv("GCS_OBJECT_NAME")
-        if objectName == "" </span><span class="cov8" title="1">{
-                objectName = "tasks.json" // Default value
+        if objectName == "" </span><span class="cov0" title="0">{
+                return "", "", fmt.Errorf("no gcs object provided")
         }</span>
 
         <span class="cov8" title="1">return bucketName, objectName, nil</span>
@@ -2815,24 +2886,24 @@ func (s *UserStore) Load() error <span class="cov8" title="1">{
         <span class="cov8" title="1">return json.Unmarshal(data, &amp;s.Users)</span>
 }
 
-func (s *UserStore) Save() error <span class="cov0" title="0">{
+func (s *UserStore) Save() error <span class="cov8" title="1">{
 
         data, err := json.MarshalIndent(s.Users, "", "  ")
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
 
-        <span class="cov0" title="0">return os.WriteFile(s.file, data, 0644)</span>
+        <span class="cov8" title="1">return os.WriteFile(s.file, data, 0644)</span>
 }
 
-func (s *UserStore) AddUser(username string) (*User, error) <span class="cov0" title="0">{
-        if username == "" </span><span class="cov0" title="0">{
+func (s *UserStore) AddUser(username string) (*User, error) <span class="cov8" title="1">{
+        if username == "" </span><span class="cov8" title="1">{
                 return nil, errors.New("user name can't be empty")
         }</span>
-        <span class="cov0" title="0">if _, exists := s.Users[username]; exists </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if _, exists := s.Users[username]; exists </span><span class="cov8" title="1">{
                 return nil, errors.New("user already exists")
         }</span>
-        <span class="cov0" title="0">newUser := User{UserName: username, UserId: uuid.New()}
+        <span class="cov8" title="1">newUser := User{UserName: username, UserId: uuid.New()}
         s.Users[username] = newUser
         fmt.Println(s.Users)
         err := s.Save()
@@ -2849,7 +2920,7 @@ func (s *UserStore) GetUserById(userId string) (User, bool) <span class="cov8" t
                         return v, true
                 }</span>
         }
-        <span class="cov0" title="0">return User{}, false</span>
+        <span class="cov8" title="1">return User{}, false</span>
 }
 </pre>
 		

@@ -192,16 +192,6 @@ func TestGetGCSConfig(t *testing.T) {
 		t.Errorf("Expected object 'test.json', got %q", object)
 	}
 
-	// Test with only bucket set (should use default object name)
-	os.Unsetenv("GCS_OBJECT_NAME")
-	bucket, object, err = GetGCSConfig()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-	if object != "tasks.json" {
-		t.Errorf("Expected default object name 'tasks.json', got %q", object)
-	}
-
 	// Test with neither set (should error)
 	os.Unsetenv("GCS_BUCKET_NAME")
 	_, _, err = GetGCSConfig()

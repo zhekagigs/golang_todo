@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
 	"github.com/zhekagigs/golang_todo/cli"
@@ -21,7 +18,7 @@ import (
 )
 
 func main() {
-	err, repo := configureRepo()
+	repo, err := repository.ConfigureRepo()
 	if err != nil {
 		logger.Error.Printf("Failed to create repository: %v", err)
 		os.Exit(1)
@@ -54,40 +51,6 @@ func loadTasks(repo *repository.GCSRepository) *internal.TaskHolder {
 		taskHolder.Add(task)
 	}
 	return taskHolder
-}
-
-// Get GCS configuration.
-// Get credentials path.
-// Initialize GCS repository.
-func configureRepo() (error, *repository.GCSRepository) {
-	ctx := context.Background()
-	// Set up GCS environment variables for tests
-	bucketName := "go-todo-app-json-storage"
-	objectName := "test-tasks.json"
-
-	os.Setenv("GCS_BUCKET_NAME", bucketName)
-	os.Setenv("GCS_OBJECT_NAME", objectName)
-
-	bucketName, objectName, err := repository.GetGCSConfig()
-	if err != nil {
-		logger.Error.Printf("Failed to get GCS config: %v", err)
-		os.Exit(1)
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		logger.Error.Printf("Failed to get home directory: %v", err)
-		os.Exit(1)
-	}
-
-	credsPath := filepath.Join(homeDir, ".config", "gcloud", "application_default_credentials.json")
-	if _, err := os.Stat(credsPath); os.IsNotExist(err) {
-		log.Printf("Credentials file not found at %s - run 'gcloud auth application-default login' first", credsPath)
-		os.Exit(1)
-	}
-
-	repo, err := repository.NewGCSRepository(ctx, bucketName, objectName, credsPath)
-	return err, repo
 }
 
 func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server controller.HTTPServer, cliApp cli.CLIApp) int {
@@ -171,22 +134,21 @@ func RealMain(newTaskHolder func(diskPath string) *internal.TaskHolder, server c
 
 func startHTTPServer(port string, taskHandler *controller.TaskRenderHandler, server controller.HTTPServer, api *controller.ApiService, authHandler *controller.AuthHandler) error {
 	router := http.NewServeMux()
-
+	// api routes
 	router.HandleFunc("GET /api/tasks", api.GetAllPosts)
 	router.HandleFunc("GET /api/tasks/{id}", api.GetTaskById)
 	router.HandleFunc("POST /api/tasks", mid.AuthMiddleware(api.CreateTask))
 	router.HandleFunc("PUT /api/tasks/{id}", mid.AuthMiddleware(api.UpdateTask))
 	router.HandleFunc("DELETE /api/tasks/{id}", mid.AuthMiddleware(api.DeleteTask))
-
+	// auth routes
 	router.HandleFunc("POST /login", authHandler.LoginHandler)
 	router.HandleFunc("POST /logout", authHandler.LogoutHandler)
-
+	// view routes
 	router.HandleFunc("GET /tasks/create", mid.AuthMiddleware(taskHandler.HandleTaskCreate))
 	router.HandleFunc("GET /tasks", taskHandler.HandleTaskListRead)
 	router.HandleFunc("DELETE /tasks", mid.AuthMiddleware(taskHandler.HandleTaskDelete))
 	router.HandleFunc("GET /tasks/update", mid.AuthMiddleware(taskHandler.HandleTaskUpdate))
 	router.HandleFunc("POST /tasks/update", mid.AuthMiddleware(taskHandler.HandleTaskUpdate))
-
 	router.HandleFunc("GET /", taskHandler.HandleTaskListRead)
 
 	// Health check
@@ -200,6 +162,7 @@ func startHTTPServer(port string, taskHandler *controller.TaskRenderHandler, ser
 	return server.ListenAndServe(":"+port, loggingHandler)
 }
 
+// gracefult shutdown handling
 func handleShutdown(done chan struct{}) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
@@ -209,6 +172,6 @@ func handleShutdown(done chan struct{}) {
 		logger.Info.Println("Received shutdown signal")
 		done <- struct{}{}
 	case <-done:
-		logger.Info.Println("Server stopped")
+		logger.Info.Println("Server stopped via done channel")
 	}
 }

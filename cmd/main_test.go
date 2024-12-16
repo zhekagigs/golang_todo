@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	in "github.com/zhekagigs/golang_todo/internal"
 )
@@ -36,6 +37,7 @@ func (cli *MockCLIApp) AppStarter(newTaskHolder func(diskPath string) *in.TaskHo
 
 func (cli *MockCLIApp) RunTaskManagmentCLI(taskHolder *in.TaskHolder) int {
 	cli.RunCLICalled = true
+	time.Sleep(1 * time.Second) // TODO figure out a block for server
 	return 0
 }
 
