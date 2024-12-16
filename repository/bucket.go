@@ -73,6 +73,7 @@ func ConfigureRepo() (*GCSRepository, error) {
 	repo, err := NewGCSRepository(ctx, bucketName, objectName, credsPath)
 	return repo, err
 }
+
 func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFile string) (*GCSRepository, error) {
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(credentialsFile))

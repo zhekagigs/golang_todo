@@ -85,7 +85,7 @@
 				
 				<option value="file14">github.com/zhekagigs/golang_todo/internal/testutils.go (88.4%)</option>
 				
-				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (80.8%)</option>
+				<option value="file15">github.com/zhekagigs/golang_todo/internal/utils.go (84.6%)</option>
 				
 				<option value="file16">github.com/zhekagigs/golang_todo/internal/workepool.go (0.0%)</option>
 				
@@ -2396,7 +2396,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 var category TaskCategory
                 x := rand.Intn(5)
                 switch x </span>{
-                case 0:<span class="cov0" title="0">
+                case 0:<span class="cov8" title="1">
                         verb := brewingVerbs[rand.Intn(len(brewingVerbs))]
                         adj := adjectives[rand.Intn(len(adjectives))]
                         noun := beerTypes[rand.Intn(len(beerTypes))]
@@ -2404,7 +2404,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                         category = Brewing</span>
                 case 1:<span class="cov8" title="1">
                         verb := "Process"
-                        if rand.Intn(2) == 0 </span><span class="cov8" title="1">{
+                        if rand.Intn(2) == 0 </span><span class="cov0" title="0">{
                                 verb = "Order"
                         }</span>
                         <span class="cov8" title="1">ingredient := ingredients[rand.Intn(len(ingredients))]
@@ -2418,7 +2418,7 @@ func GenerateRandomTasks(count int) []Task <span class="cov8" title="1">{
                 case 2:<span class="cov8" title="1">
                         taskValue = marketingTasks[rand.Intn(len(marketingTasks))]
                         category = Marketing</span>
-                case 3:<span class="cov8" title="1">
+                case 3:<span class="cov0" title="0">
                         taskValue = logisticsTasks[rand.Intn(len(logisticsTasks))]
                         category = Logistics</span>
                 case 4:<span class="cov8" title="1">
@@ -2742,6 +2742,7 @@ func ConfigureRepo() (*GCSRepository, error) <span class="cov0" title="0">{
         <span class="cov0" title="0">repo, err := NewGCSRepository(ctx, bucketName, objectName, credsPath)
         return repo, err</span>
 }
+
 func NewGCSRepository(ctx context.Context, bucketName, objectName, credentialsFile string) (*GCSRepository, error) <span class="cov8" title="1">{
 
         client, err := storage.NewClient(ctx, option.WithCredentialsFile(credentialsFile))

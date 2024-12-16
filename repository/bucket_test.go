@@ -19,40 +19,43 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	// Setup
-	log.Println("Setting up test environment...")
+	var code int
+	if os.Getenv("CI") != "true" {
+		// Setup
+		log.Println("Setting up test environment...")
 
-	// Set up GCS environment variables for tests
-	testBucketName = "go-todo-app-json-storage"
-	testObjectName = "test-tasks.json"
+		// Set up GCS environment variables for tests
+		testBucketName = "go-todo-app-json-storage"
+		testObjectName = "test-tasks.json"
 
-	os.Setenv("GCS_BUCKET_NAME", testBucketName)
-	os.Setenv("GCS_OBJECT_NAME", testObjectName)
+		os.Setenv("GCS_BUCKET_NAME", testBucketName)
+		os.Setenv("GCS_OBJECT_NAME", testObjectName)
 
-	// Get credentials path
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Printf("Failed to get home directory: %v", err)
-		os.Exit(1)
+		// Get credentials path
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			log.Printf("Failed to get home directory: %v", err)
+			os.Exit(1)
+		}
+
+		credsPath = filepath.Join(homeDir, ".config", "gcloud", "application_default_credentials.json")
+		if _, err := os.Stat(credsPath); os.IsNotExist(err) {
+			log.Printf("Credentials file not found at %s - run 'gcloud auth application-default login' first", credsPath)
+			os.Exit(1)
+		}
+		// Run tests
+
+		code = m.Run()
+
+		// Cleanup
+		log.Println("Cleaning up test environment...")
+		// You could add cleanup code here, like deleting test files from GCS
 	}
-
-	credsPath = filepath.Join(homeDir, ".config", "gcloud", "application_default_credentials.json")
-	if _, err := os.Stat(credsPath); os.IsNotExist(err) {
-		log.Printf("Credentials file not found at %s - run 'gcloud auth application-default login' first", credsPath)
-		os.Exit(1)
-	}
-
-	// Run tests
-	code := m.Run()
-
-	// Cleanup
-	log.Println("Cleaning up test environment...")
-	// You could add cleanup code here, like deleting test files from GCS
-
 	os.Exit(code)
 }
 
-func TestRepository(t *testing.T) {
+func TestGCSRepository(t *testing.T) {
+
 	// Skip if not in integration test mode
 	if testing.Short() {
 		t.Skip("Skipping integration test")
